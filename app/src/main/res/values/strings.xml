@@ -1,20 +1,5 @@
 <resources>
     <string name="app_name">Eduk</string>
     <string name="device_admin_label">Eduk Parental Control</string>
-    <string name="device_admin_description">Enables Eduk to manage screen time and restrict apps for educational purposes.</string>
-    
-    <!-- US Market Content -->
-    <string name="welcome_title">Welcome to Eduk</string>
-    <string name="welcome_subtitle">Empowering your child through smarter screen time.</string>
-    <string name="parent_pin_prompt">Enter Parent PIN to Access Settings</string>
-    <string name="question_correct">Great job! You\'ve earned 15 minutes.</string>
-    <string name="question_incorrect">Not quite. Let\'s review the explanation.</string>
-    <string name="time_remaining">Time Remaining: %1$d min</string>
-    
-    <!-- Subjects -->
-    <string name="subject_math">Mathematics</string>
-    <string name="subject_science">Science</string>
-    <string name="subject_ela">English Language Arts</string>
-    <string name="subject_history">US History</string>
-    <string name="subject_geography">Geography</string>
+    <string name="device_admin_description">Enables Eduk to manage screen time.</string>
 </resources>
