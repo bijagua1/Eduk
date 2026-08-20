@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParentDashboardScreen() {
+fun ParentDashboard() {
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Parent Dashboard") })
@@ -78,6 +78,3 @@ fun StatCard(title: String, value: String, icon: androidx.compose.ui.graphics.ve
         }
     }
 }
-
-@Composable fun OnboardingScreen(onComplete: () -> Unit) { /* Placeholder */ }
-@Composable fun StatsScreen() { /* Placeholder */ }

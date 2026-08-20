@@ -44,7 +44,9 @@ fun EdukApp(startDestination: String) {
             ParentDashboard() 
         }
         composable("question") { 
-            QuestionScreen() 
+            QuestionScreen(onCorrect = {
+                // Logic to grant access would go here
+            }) 
         }
     }
 }
