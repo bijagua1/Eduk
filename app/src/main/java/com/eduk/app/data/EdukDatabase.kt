@@ -43,7 +43,11 @@ class Converters {
     }
 }
 
-@Database(entities = [Question::class, StudentProfile::class, UsageStats::class], version = 1)
+@Database(
+    entities = [Question::class, StudentProfile::class, UsageStats::class],
+    version = 1,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class EdukDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao

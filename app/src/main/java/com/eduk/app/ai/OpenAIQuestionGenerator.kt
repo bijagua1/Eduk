@@ -1,22 +1,13 @@
 package com.eduk.app.ai
 
 import com.eduk.app.model.Question
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * Real implementation of QuestionGenerator using OpenAI Vision API.
  * This class demonstrates the "Magnifique" high-tech integration.
  */
 class OpenAIQuestionGenerator(private val apiKey: String) : QuestionGenerator {
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
 
     override suspend fun generateFromMedia(mediaPath: String, context: GenerationContext): List<Question> {
         // In a real app, we would convert the image at mediaPath to Base64
