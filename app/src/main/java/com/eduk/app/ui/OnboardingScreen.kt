@@ -6,11 +6,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun OnboardingScreen(onComplete: () -> Unit) {
+fun OnboardingScreen(role: String, onComplete: () -> Unit) {
     var step by remember { mutableStateOf(1) }
+    
+    // Parent State
+    var parentEmail by remember { mutableStateOf("") }
+    var parentPin by remember { mutableStateOf("") }
+    
+    // Child State
+    var studentName by remember { mutableStateOf("") }
+    var parentLinkEmail by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -19,33 +28,108 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        when (step) {
-            1 -> {
-                Text("Welcome to Eduk", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text("The AI-powered study gatekeeper.", style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.height(48.dp))
-                Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Get Started")
-                }
+        if (role == "parent") {
+            ParentOnboarding(
+                step = step,
+                email = parentEmail,
+                onEmailChange = { parentEmail = it },
+                pin = parentPin,
+                onPinChange = { parentPin = it },
+                onNext = { if (step < 2) step++ else onComplete() }
+            )
+        } else {
+            ChildOnboarding(
+                step = step,
+                name = studentName,
+                onNameChange = { studentName = it },
+                parentEmail = parentLinkEmail,
+                onParentEmailChange = { parentLinkEmail = it },
+                onNext = { if (step < 2) step++ else onComplete() }
+            )
+        }
+    }
+}
+
+@Composable
+fun ParentOnboarding(
+    step: Int,
+    email: String,
+    onEmailChange: (String) -> Unit,
+    pin: String,
+    onPinChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    when (step) {
+        1 -> {
+            Text("Create Parent Account", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                label = { Text("Parent Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = pin,
+                onValueChange = onPinChange,
+                label = { Text("Set Master PIN") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onNext, modifier = Modifier.fillMaxWidth(), enabled = email.isNotEmpty() && pin.length >= 4) {
+                Text("Create Account")
             }
-            2 -> {
-                Text("Setup Student Profile", style = MaterialTheme.typography.headlineMedium)
-                OutlinedTextField(value = "", onValueChange = {}, label = { Text("Student Name") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = "", onValueChange = {}, label = { Text("Grade Level") }, modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { step = 3 }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Next")
-                }
+        }
+        2 -> {
+            Text("Account Created!", style = MaterialTheme.typography.headlineMedium)
+            Text("Now you can add your children and scan their books from the dashboard.", style = MaterialTheme.typography.bodyLarge)
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+                Text("Go to Dashboard")
             }
-            3 -> {
-                Text("Manager Account", style = MaterialTheme.typography.headlineMedium)
-                Text("Enter your credentials to receive reports.", style = MaterialTheme.typography.bodyMedium)
-                OutlinedTextField(value = "", onValueChange = {}, label = { Text("Parent Email") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = "", onValueChange = {}, label = { Text("Set Parent PIN") }, modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
-                    Text("Finish Setup")
-                }
+        }
+    }
+}
+
+@Composable
+fun ChildOnboarding(
+    step: Int,
+    name: String,
+    onNameChange: (String) -> Unit,
+    parentEmail: String,
+    onParentEmailChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    when (step) {
+        1 -> {
+            Text("Student Setup", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text("Student Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = parentEmail,
+                onValueChange = onParentEmailChange,
+                label = { Text("Parent's Registered Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onNext, modifier = Modifier.fillMaxWidth(), enabled = name.isNotEmpty() && parentEmail.isNotEmpty()) {
+                Text("Link to Parent")
+            }
+        }
+        2 -> {
+            Text("Device Linked!", style = MaterialTheme.typography.headlineMedium)
+            Text("Eduk is now active. You will need to answer questions to earn screen time.", style = MaterialTheme.typography.bodyLarge)
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+                Text("Start Learning")
             }
         }
     }

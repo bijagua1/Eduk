@@ -6,19 +6,41 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.eduk.app.ui.MainActivity
 
-/**
- * Legitimate Accessibility Service to monitor app transitions.
- * When a restricted app is opened, it redirects the user to the Eduk Question Screen.
- */
 class AppMonitoringService : AccessibilityService() {
 
-    private val restrictedApps = mutableSetOf("com.zhiliaoapp.musically", "com.google.android.youtube", "com.instagram.android")
+    companion object {
+        private var instance: AppMonitoringService? = null
+        
+        fun grantAccess(minutes: Int) {
+            instance?.performGrant(minutes)
+        }
+        
+        fun isServiceRunning(): Boolean = instance != null
+    }
+
+    private val restrictedApps = mutableSetOf(
+        "com.zhiliaoapp.musically", 
+        "com.google.android.youtube", 
+        "com.instagram.android",
+        "com.facebook.katana",
+        "com.twitter.android"
+    )
+    
     private var isUnlocked = false
     private var unlockUntil = 0L
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        instance = this
+        Log.d("EdukMonitor", "Service Connected")
+    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val packageName = event.packageName?.toString() ?: return
+            
+            // Don't block our own app
+            if (packageName == "com.eduk.app") return
             
             if (restrictedApps.contains(packageName)) {
                 checkAccess(packageName)
@@ -35,23 +57,26 @@ class AppMonitoringService : AccessibilityService() {
             // Redirect to Eduk Question Screen
             val intent = Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("RESTRICTED_APP", packageName)
                 putExtra("TRIGGER_QUESTION", true)
             }
             startActivity(intent)
-        } else {
-            Log.d("EdukMonitor", "Access granted to $packageName. Time left: ${(unlockUntil - currentTime) / 1000}s")
         }
+    }
+
+    private fun performGrant(minutes: Int) {
+        isUnlocked = true
+        unlockUntil = System.currentTimeMillis() + (minutes * 60 * 1000)
+        Log.d("EdukMonitor", "Access granted for $minutes minutes")
     }
 
     override fun onInterrupt() {
         Log.e("EdukMonitor", "Service Interrupted")
     }
-
-    // This would be called by the ViewModel when a question is answered correctly
-    fun grantAccess(minutes: Int) {
-        isUnlocked = true
-        unlockUntil = System.currentTimeMillis() + (minutes * 60 * 1000)
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        instance = null
     }
 }
