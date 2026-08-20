@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParentDashboard() {
+fun ParentDashboardScreen() {
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Parent Dashboard") })

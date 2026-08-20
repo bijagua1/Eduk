@@ -41,11 +41,11 @@ fun EdukApp(startDestination: String) {
             OnboardingScreen(onComplete = { navController.navigate("parent_dashboard") }) 
         }
         composable("parent_dashboard") { 
-            ParentDashboard() 
+            ParentDashboardScreen() 
         }
         composable("question") { 
             QuestionScreen(onCorrect = {
-                // Logic to grant access would go here
+                // Logic to grant access
             }) 
         }
     }
