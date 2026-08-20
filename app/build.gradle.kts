@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.eduk.app"
     compileSdk = 34
+    buildToolsVersion = "34.0.0"
 
     defaultConfig {
         applicationId = "com.eduk.app"
