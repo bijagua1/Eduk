@@ -18,7 +18,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         val triggerQuestion = intent.getBooleanExtra("TRIGGER_QUESTION", false)
-        val restrictedApp = intent.getStringExtra("RESTRICTED_APP")
 
         setContent {
             EdukTheme {
@@ -38,9 +37,14 @@ fun EdukApp(startDestination: String) {
     val navController = rememberNavController()
     
     NavHost(navController = navController, startDestination = startDestination) {
-        composable("onboarding") { OnboardingScreen(onComplete = { navController.navigate("parent_dashboard") }) }
-        composable("parent_dashboard") { ParentDashboardScreen() }
-        composable("question") { QuestionScreen(onCorrect = { /* Logic to grant access */ }) }
-        composable("stats") { StatsScreen() }
+        composable("onboarding") { 
+            OnboardingScreen(onComplete = { navController.navigate("parent_dashboard") }) 
+        }
+        composable("parent_dashboard") { 
+            ParentDashboard() 
+        }
+        composable("question") { 
+            QuestionScreen() 
+        }
     }
 }
