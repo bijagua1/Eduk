@@ -15,7 +15,7 @@
         android:roundIcon="@drawable/ic_launcher_background"
         android:supportsRtl="true"
         android:theme="@style/Theme.Eduk"
-        tools:replace="android:allowBackup,android:label,android:theme"
+        tools:replace="android:allowBackup"
         tools:targetApi="34">
 
         <activity
