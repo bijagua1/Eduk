@@ -127,6 +127,22 @@ data class CloudAppRule(
     val dailyLimitMinutes: Int? = null,
     val isEnabled: Boolean = true
 )
+data class CloudInstalledApp(
+    val id: String,
+    val packageName: String,
+    val displayName: String,
+    val versionName: String? = null,
+    val isSystemApp: Boolean = false,
+    val lastReportedAt: String? = null
+)
+data class InstalledAppReport(
+    val packageName: String,
+    val displayName: String,
+    val versionName: String? = null,
+    val isSystemApp: Boolean = false
+)
+data class InstalledAppsRequest(val apps: List<InstalledAppReport>)
+data class InstalledAppsResponse(val reported: Int)
 data class CloudSchedule(
     val id: String,
     val name: String,
@@ -226,6 +242,7 @@ data class ReviewQuestionRequest(val reviewStatus: String)
 data class ParentPolicyResponse(
     val policy: CloudControlPolicy,
     val appRules: List<CloudAppRule>,
+    val installedApps: List<CloudInstalledApp> = emptyList(),
     val schedules: List<CloudSchedule>,
     val rewardRules: List<CloudRewardRule>
 )
@@ -362,6 +379,12 @@ interface EdukCloudService {
 
     @GET("api/mobile/v1/students/policy")
     suspend fun getStudentPolicy(@Header("Authorization") authorization: String): Response<StudentPolicyResponse>
+
+    @POST("api/mobile/v1/students/installed-apps")
+    suspend fun reportInstalledApps(
+        @Header("Authorization") authorization: String,
+        @Body request: InstalledAppsRequest
+    ): Response<InstalledAppsResponse>
 
     @GET("api/mobile/v1/students/location-settings")
     suspend fun getStudentLocationSettings(@Header("Authorization") authorization: String): Response<LocationSettingsResponse>
@@ -568,6 +591,8 @@ object EdukCloudRepository {
     suspend fun refreshStudentSession(studentToken: String) = body(service.refreshStudentSession(bearer(studentToken)))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
+    suspend fun reportInstalledApps(studentToken: String, apps: List<InstalledAppReport>) =
+        body(service.reportInstalledApps(bearer(studentToken), InstalledAppsRequest(apps)))
     suspend fun getStudentLocationSettings(studentToken: String) = body(service.getStudentLocationSettings(bearer(studentToken)))
     suspend fun reportStudentLocation(studentToken: String, request: StudentLocationReportRequest) =
         body(service.reportStudentLocation(bearer(studentToken), request))

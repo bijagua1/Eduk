@@ -14,6 +14,7 @@ import java.util.Calendar
 class ChildPolicyStore(context: Context) {
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
+    private val usageTracker = AppUsageTracker(context.applicationContext)
 
     fun save(response: StudentPolicyResponse) {
         preferences.edit()
@@ -34,6 +35,22 @@ class ChildPolicyStore(context: Context) {
 
     fun isAccessCurrentlyEarned(): Boolean = System.currentTimeMillis() < preferences.getLong(KEY_ACCESS_UNTIL, 0L)
 
+    fun beginForeground(packageName: String) = usageTracker.beginForeground(packageName)
+
+    fun currentForegroundPackage(): String? = usageTracker.currentForegroundPackage()
+
+    fun nextGateCheckDelayMillis(packageName: String): Long? {
+        val policy = load() ?: return null
+        if (!policy.policy.isBlockingEnabled) return null
+        val matchingRule = policy.appRules.firstOrNull { it.isEnabled && it.packageName == packageName }
+        if (matchingRule?.accessMode != "learning_gate") return null
+        if (isAccessCurrentlyEarned()) {
+            return (preferences.getLong(KEY_ACCESS_UNTIL, 0L) - System.currentTimeMillis()).coerceAtLeast(0L)
+        }
+        val limit = matchingRule.dailyLimitMinutes ?: return null
+        return usageTracker.remainingMillis(packageName, limit)
+    }
+
     fun shouldGate(packageName: String): Boolean {
         if (packageName == "com.eduk.app") return false
         val policy = load() ?: return DEFAULT_GATED_PACKAGES.contains(packageName)
@@ -43,7 +60,8 @@ class ChildPolicyStore(context: Context) {
         val matchingRule = policy.appRules.firstOrNull { it.isEnabled && it.packageName == packageName }
         return when (matchingRule?.accessMode) {
             "allow" -> false
-            "block", "learning_gate" -> true
+            "block" -> true
+            "learning_gate" -> matchingRule.dailyLimitMinutes?.let { usageTracker.remainingMillis(packageName, it) <= 0L } ?: true
             else -> hasEntertainmentSchedule(policy.schedules) && matchingRule?.category != "Education"
         }
     }

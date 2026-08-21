@@ -41,6 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.EdukSessionStore
+import com.eduk.app.cloud.InstalledAppInventoryReporter
 import com.eduk.app.cloud.LearningProgressResponse
 import com.eduk.app.cloud.StudentLocationReportRequest
 import com.eduk.app.cloud.StudentStateResponse
@@ -214,6 +215,15 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     }
                     isContinuousLocationSharingActive = locationSettings.isSharingEnabled && sessionStore.isLocationSharingActive()
                     AppMonitoringService.applyRemotePolicy(context, policy)
+                    scope.launch {
+                        val inventoryToken = sessionStore.studentToken() ?: return@launch
+                        runCatching {
+                            EdukCloudRepository.reportInstalledApps(
+                                inventoryToken,
+                                InstalledAppInventoryReporter.collectVisibleLaunchableApps(context)
+                            )
+                        }
+                    }
                 }
                 .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
         }

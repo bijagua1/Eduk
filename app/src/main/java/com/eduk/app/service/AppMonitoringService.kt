@@ -3,6 +3,8 @@ package com.eduk.app.service
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.eduk.app.cloud.StudentPolicyResponse
@@ -30,6 +32,7 @@ class AppMonitoringService : AccessibilityService() {
     }
 
     private lateinit var policyStore: ChildPolicyStore
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -41,7 +44,21 @@ class AppMonitoringService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || !::policyStore.isInitialized) return
         val packageName = event.packageName?.toString() ?: return
+        if (policyStore.currentForegroundPackage() != packageName) {
+            policyStore.beginForeground(packageName)
+            scheduleGateCheck(packageName)
+        }
         if (policyStore.shouldGate(packageName)) checkAccess(packageName)
+    }
+
+    private fun scheduleGateCheck(packageName: String) {
+        val delay = policyStore.nextGateCheckDelayMillis(packageName) ?: return
+        if (delay <= 0L) return
+        handler.postDelayed({
+            if (::policyStore.isInitialized && policyStore.currentForegroundPackage() == packageName && policyStore.shouldGate(packageName)) {
+                checkAccess(packageName)
+            }
+        }, delay + 350L)
     }
 
     private fun checkAccess(packageName: String) {
@@ -67,7 +84,13 @@ class AppMonitoringService : AccessibilityService() {
         if (enabled && ::policyStore.isInitialized) policyStore.clearAccess()
     }
 
-    private fun reloadPolicy() = Unit
+    private fun reloadPolicy() {
+        if (!::policyStore.isInitialized) return
+        policyStore.currentForegroundPackage()?.let { packageName ->
+            if (policyStore.shouldGate(packageName)) checkAccess(packageName)
+            else scheduleGateCheck(packageName)
+        }
+    }
 
     override fun onInterrupt() {
         Log.e("EdukMonitor", "Service interrupted")
@@ -75,6 +98,7 @@ class AppMonitoringService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
         instance = null
     }
 }
