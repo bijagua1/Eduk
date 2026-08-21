@@ -1,5 +1,7 @@
 package com.eduk.app.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 
 private val AuthNavy = Color(0xFF0B1F3A)
 private val AuthOrange = Color(0xFFFF7A1A)
+private val AuthBody = Color(0xFF52667D)
 
 @Composable
 fun ProfessionalAuthScreen(
@@ -42,6 +45,21 @@ fun ProfessionalAuthScreen(
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = AuthNavy,
+        unfocusedTextColor = AuthNavy,
+        disabledTextColor = AuthNavy,
+        cursorColor = AuthOrange,
+        focusedBorderColor = AuthOrange,
+        unfocusedBorderColor = Color(0xFF8190A0),
+        focusedLabelColor = AuthOrange,
+        unfocusedLabelColor = AuthBody,
+        focusedLeadingIconColor = AuthOrange,
+        unfocusedLeadingIconColor = AuthBody,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
 
     fun authenticate() {
         isSubmitting = true
@@ -73,17 +91,27 @@ fun ProfessionalAuthScreen(
 
     Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .imePadding()
+                .padding(horizontal = 24.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(color = AuthNavy, shape = RoundedCornerShape(26.dp), modifier = Modifier.size(88.dp)) {
-                Box(contentAlignment = Alignment.Center) { Icon(if (isLogin) Icons.Default.Lock else Icons.Default.Person, null, tint = AuthOrange, modifier = Modifier.size(40.dp)) }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(if (isLogin) Icons.Default.Lock else Icons.Default.Person, null, tint = AuthOrange, modifier = Modifier.size(40.dp))
+                }
             }
             Spacer(Modifier.height(24.dp))
             Text(if (isLogin) "Parent sign in" else "Create parent account", color = AuthNavy, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(8.dp))
-            Text(if (isLogin) "Manage your family through Eduk Family Cloud." else "Your account creates the secure family space for child devices.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                if (isLogin) "Manage your family through Eduk Family Cloud." else "Your account creates the secure family space for child devices.",
+                color = AuthBody,
+                style = MaterialTheme.typography.bodyMedium
+            )
             Spacer(Modifier.height(30.dp))
 
             if (!isLogin) {
@@ -92,11 +120,13 @@ fun ProfessionalAuthScreen(
                     onValueChange = { displayName = it },
                     label = { Text("Parent name") },
                     leadingIcon = { Icon(Icons.Default.Person, null) },
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = AuthNavy),
+                    colors = inputColors,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                     singleLine = true
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
             }
             OutlinedTextField(
                 value = email,
@@ -104,11 +134,13 @@ fun ProfessionalAuthScreen(
                 label = { Text("Email address") },
                 leadingIcon = { Icon(Icons.Default.Email, null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = AuthNavy),
+                colors = inputColors,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -116,29 +148,34 @@ fun ProfessionalAuthScreen(
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = AuthNavy),
+                colors = inputColors,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true
             )
             if (!isLogin) {
-                Text("Use at least 8 characters. Your child will receive separate credentials and a PIN.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
+                Text("Use at least 8 characters. Your child will receive separate credentials and a PIN.", color = AuthBody, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 9.dp))
             }
-            errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp)) }
-            Spacer(Modifier.height(28.dp))
+            errorMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
+            }
+            Spacer(Modifier.height(30.dp))
             Button(
                 onClick = ::authenticate,
                 enabled = !isSubmitting && email.isNotBlank() && password.length >= 8 && (isLogin || displayName.isNotBlank()),
                 modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AuthOrange),
+                colors = ButtonDefaults.buttonColors(containerColor = AuthOrange, contentColor = Color.White),
                 shape = RoundedCornerShape(18.dp)
             ) {
                 if (isSubmitting) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text(if (isLogin) "Sign in to Family Cloud" else "Create secure family account", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                else Text(if (isLogin) "Sign in to Family Cloud" else "Create secure family account", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             TextButton(onClick = { isLogin = !isLogin; errorMessage = null }) {
                 Text(if (isLogin) "New to Eduk? Create an account" else "Already have an account? Sign in", color = AuthNavy, fontWeight = FontWeight.Bold)
             }
+            Spacer(Modifier.height(12.dp))
         }
     }
 }
