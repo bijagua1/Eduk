@@ -24,7 +24,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun SubscriptionPaywallScreen(onContinue: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val parentToken = remember { EdukSessionStore(LocalContext.current).parentToken() }
+    val context = LocalContext.current
+    val sessionStore = remember(context) { EdukSessionStore(context) }
+    val parentToken = sessionStore.parentToken()
     var entitlement by remember { mutableStateOf<EntitlementResponse?>(null) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -102,7 +104,7 @@ private fun ActiveEntitlement(entitlement: EntitlementResponse, onContinue: () -
     EntitlementFeature("Up to ${entitlement.limits.maxChildren} child profiles")
     EntitlementFeature("AI learning, rewards and app controls")
     if (entitlement.limits.locationSharing) EntitlementFeature("Consented location and safe places")
-    Spacer(Modifier.weight(1f))
+    Spacer(Modifier.height(36.dp))
     Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)) {
         Text("Continue to Family Setup", fontWeight = FontWeight.Bold, fontSize = 17.sp)
     }
@@ -119,7 +121,7 @@ private fun FreeEntitlement(onContinue: () -> Unit) {
     EntitlementFeature("Basic app blocking and daily time controls")
     Spacer(Modifier.height(20.dp))
     Text("Paid upgrades and purchase restoration will be delivered through Google Play. Eduk does not collect card details in this app.", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Spacer(Modifier.weight(1f))
+    Spacer(Modifier.height(36.dp))
     Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)) {
         Text("Continue with Free", fontWeight = FontWeight.Bold, fontSize = 17.sp)
     }
