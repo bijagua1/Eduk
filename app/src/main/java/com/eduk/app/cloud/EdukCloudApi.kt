@@ -20,8 +20,8 @@ class EdukCloudException(
 ) : IllegalStateException(message)
 
 object EdukCloudConfig {
-    // Verified HTTPS endpoint for the current Eduk Family Cloud instance.
-    const val BASE_URL = "https://3000-i9ngt61dg0xvs3rgnu1x1-2fc2b4ae.us4.manus.computer/"
+    // Published production HTTPS endpoint for Eduk Family Cloud.
+    const val BASE_URL = "https://edukcloud-cwj69xod.manus.space/"
 }
 
 data class ParentRegisterRequest(
