@@ -1,15 +1,20 @@
 package com.eduk.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.eduk.app.service.AppMonitoringService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,10 +26,15 @@ fun ParentDashboardScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Eduk Parent Dashboard", fontWeight = FontWeight.Bold) },
+                title = { Text("Eduk Family Hub", fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = { /* Settings */ }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -33,69 +43,97 @@ fun ParentDashboardScreen() {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 20.dp)
         ) {
             item {
+                Spacer(modifier = Modifier.height(16.dp))
+                // Premium Student Profile Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Student: Alex", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text("Grade: 7th Grade", style = MaterialTheme.typography.bodyMedium)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Device Status: Protected", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(24.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Face, contentDescription = null, tint = Color.White)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text("Alex", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text("7th Grade • Active Learner", color = Color.White.copy(alpha = 0.8f))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Accuracy", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                                    Text("85%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                                Column {
+                                    Text("Time Earned", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                                    Text("$timeEarned min", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                                Column {
+                                    Text("Status", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                                    Text("Protected", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+                                }
+                            }
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatCard(
-                        title = "Accuracy", 
-                        value = "85%", 
-                        icon = Icons.Default.CheckCircle,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        title = "Time Earned", 
-                        value = "$timeEarned min", 
-                        icon = Icons.Default.Timer,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { showTimeDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Adjust Student Time")
+                    Icon(Icons.Default.Timer, contentDescription = null)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Grant Bonus Screen Time", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
             }
 
             item {
-                Text("Parental Controls", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                ControlItem(
-                    title = "Manage Restricted Apps",
-                    subtitle = "YouTube, TikTok, Instagram blocked",
-                    icon = Icons.Default.Block
+                Text("Smart Controls", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            item {
+                ControlCard(
+                    title = "App Restrictions",
+                    subtitle = "Social media & Games locked",
+                    icon = Icons.Default.Block,
+                    color = MaterialTheme.colorScheme.error
                 )
-                ControlItem(
-                    title = "AI Book Scan",
-                    subtitle = "Scan new study material to generate questions",
-                    icon = Icons.Default.CameraAlt
+                Spacer(modifier = Modifier.height(12.dp))
+                ControlCard(
+                    title = "AI Book Scanner",
+                    subtitle = "Generate questions from textbooks",
+                    icon = Icons.Default.CameraAlt,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                ControlItem(
-                    title = "Weekly Progress Report",
-                    subtitle = "Next report: Sunday, Aug 23",
-                    icon = Icons.Default.Assessment
+                Spacer(modifier = Modifier.height(12.dp))
+                ControlCard(
+                    title = "Analytics Report",
+                    subtitle = "View detailed learning progress",
+                    icon = Icons.Default.BarChart,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -103,63 +141,59 @@ fun ParentDashboardScreen() {
     if (showTimeDialog) {
         AlertDialog(
             onDismissRequest = { showTimeDialog = false },
-            title = { Text("Adjust Time") },
-            text = { Text("Add or remove screen time for Alex.") },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Adjust Alex's Time", fontWeight = FontWeight.Bold) },
+            text = { Text("Would you like to grant extra screen time or reduce it manually?") },
             confirmButton = {
-                TextButton(onClick = { 
+                Button(onClick = { 
                     timeEarned += 10
                     AppMonitoringService.grantAccess(10)
                     showTimeDialog = false 
                 }) {
-                    Text("Add 10 Min")
+                    Text("+10 Min")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { 
+                OutlinedButton(onClick = { 
                     if (timeEarned >= 10) timeEarned -= 10
                     showTimeDialog = false 
                 }) {
-                    Text("Remove 10 Min")
+                    Text("-10 Min")
                 }
             }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ControlItem(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    ListItem(
-        headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
-        supportingContent = { Text(subtitle) },
-        leadingContent = { 
+fun ControlCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(40.dp)
+                shape = RoundedCornerShape(12.dp),
+                color = color.copy(alpha = 0.1f),
+                modifier = Modifier.size(52.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(28.dp))
                 }
             }
-        },
-        modifier = Modifier.padding(vertical = 4.dp)
-    )
-}
-
-@Composable
-fun StatCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = title, style = MaterialTheme.typography.labelMedium)
-            Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
         }
     }
 }
