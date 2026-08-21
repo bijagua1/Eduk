@@ -20,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -152,7 +156,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
 
             errorMessage?.let { message ->
                 item {
-                    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive }) {
                         Text(message, color = Color(0xFF9B2C1C), modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -161,7 +165,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.weight(1f)) {
-                        Text("Children", color = DashboardInk, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                        Text("Children", color = DashboardInk, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                         Text("Live family controls", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall)
                     }
                     TextButton(onClick = onAddChild) { Text("Add child", color = DashboardOrange, fontWeight = FontWeight.Bold) }
@@ -170,7 +174,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
 
             when {
                 isLoading -> item {
-                    Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 48.dp).semantics { liveRegion = LiveRegionMode.Polite }, horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = DashboardOrange)
                         Spacer(Modifier.height(12.dp))
                         Text("Loading your family controls…", color = Color(0xFF62738A))
@@ -181,7 +185,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                         Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.School, null, tint = DashboardOrange, modifier = Modifier.size(44.dp))
                             Spacer(Modifier.height(14.dp))
-                            Text("Create the first child account", color = DashboardInk, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("Create the first child account", color = DashboardInk, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                             Spacer(Modifier.height(6.dp))
                             Text("Their username, PIN, and one-time device code are created here by the parent.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
                             Spacer(Modifier.height(18.dp))

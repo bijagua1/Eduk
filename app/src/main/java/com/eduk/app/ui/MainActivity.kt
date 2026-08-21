@@ -27,6 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -258,7 +262,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 if (!AppMonitoringService.isServiceRunning()) {
                     Surface(color = Color(0xFFFFF6EE), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(20.dp)) {
-                            Text("Finish protection setup", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("Finish protection setup", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                             Spacer(Modifier.height(6.dp))
                             Text("To apply your parent’s app rules, enable Eduk in Android Accessibility. Eduk only checks which app is open; it does not read messages or page content.", color = Color(0xFF624833), style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.height(12.dp))
@@ -286,7 +290,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 if (isLocationSharingEnabled) {
                     Surface(color = Color(0xFFEAF3FF), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(20.dp)) {
-                            Text("Family location sharing", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("Family location sharing", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 if (isContinuousLocationSharingActive) "Sharing is active. A visible Android notification remains on while Eduk sends periodic updates to your family."
@@ -327,7 +331,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 }
                 Surface(color = Color.White, shape = RoundedCornerShape(24.dp), shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(20.dp)) {
-                        Text("Earn more time", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                        Text("Earn more time", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                         Spacer(Modifier.height(6.dp))
                         Text("Scan the book you are studying. After a parent approves the questions, verified answers earn the time your parent configured.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(18.dp))
@@ -344,7 +348,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 else {
                     Icon(Icons.Default.Lock, null, tint = HomeOrange, modifier = Modifier.size(42.dp))
                     Spacer(Modifier.height(14.dp))
-                    Text(errorMessage!!, color = HomeNavy, style = MaterialTheme.typography.bodyMedium)
+                    Text(errorMessage!!, color = HomeNavy, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
                     Spacer(Modifier.height(14.dp))
                     OutlinedButton(onClick = ::refresh) { Text("Try again") }
                 }
@@ -375,7 +379,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
 private fun StudentProgressCard(progress: LearningProgressResponse) {
     Surface(color = Color.White, shape = RoundedCornerShape(24.dp), shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp)) {
-            Text("Your learning progress", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            Text("Your learning progress", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 HomeProgressMetric("XP", progress.xp.toString(), Modifier.weight(1f))
