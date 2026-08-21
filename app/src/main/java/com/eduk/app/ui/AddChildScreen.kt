@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 private val EdukNavy = Color(0xFF0B1F3A)
 private val EdukOrange = Color(0xFFFF7A1A)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddChildScreen(onChildCreated: () -> Unit) {
     val context = LocalContext.current

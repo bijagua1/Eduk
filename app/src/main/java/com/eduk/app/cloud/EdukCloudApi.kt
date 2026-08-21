@@ -76,6 +76,7 @@ data class BlockingRequest(val isBlockingEnabled: Boolean)
 data class TimeAdjustmentResponse(val childId: String, val timeAvailableMinutes: Int)
 data class BlockingResponse(val childId: String, val isBlockingEnabled: Boolean)
 data class LearningEventRequest(val questionText: String, val subject: String, val wasCorrect: Boolean)
+data class LearningEventResponse(val minutesAwarded: Int, val timeAvailableMinutes: Int)
 data class LearningHistoryEvent(
     val id: String,
     val questionText: String,
@@ -141,7 +142,7 @@ interface EdukCloudService {
     suspend fun recordLearningEvent(
         @Header("Authorization") authorization: String,
         @Body request: LearningEventRequest
-    ): Response<TimeAdjustmentResponse>
+    ): Response<LearningEventResponse>
 }
 
 object EdukCloudRepository {
