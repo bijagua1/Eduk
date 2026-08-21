@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -33,10 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.eduk.app.cloud.CloudChild
+import com.eduk.app.cloud.CloudSafePlace
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.LocationSettingsRequest
+import com.eduk.app.cloud.SafePlaceRequest
 import kotlinx.coroutines.launch
 
 private val LocationNavy = Color(0xFF0B1F3A)
@@ -52,6 +58,12 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
     var loading by remember { mutableStateOf(true) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    var safePlaces by remember { mutableStateOf(emptyList<CloudSafePlace>()) }
+    var safePlaceName by remember { mutableStateOf("") }
+    var latitudeText by remember { mutableStateOf("") }
+    var longitudeText by remember { mutableStateOf("") }
+    var radiusText by remember { mutableStateOf("150") }
+    var savingPlace by remember { mutableStateOf(false) }
 
     fun load() {
         if (parentToken == null) {
@@ -61,8 +73,15 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
         }
         loading = true
         scope.launch {
-            runCatching { EdukCloudRepository.getLocationSettings(parentToken, child.id) }
-                .onSuccess { settings -> isSharingEnabled = settings.isSharingEnabled; retentionDays = settings.retentionDays; message = null }
+            runCatching {
+                EdukCloudRepository.getLocationSettings(parentToken, child.id) to
+                    EdukCloudRepository.getSafePlaces(parentToken, child.id)
+            }.onSuccess { (settings, places) ->
+                    isSharingEnabled = settings.isSharingEnabled
+                    retentionDays = settings.retentionDays
+                    safePlaces = places.places
+                    message = null
+                }
                 .onFailure { message = "We could not load location privacy settings." }
             loading = false
         }
@@ -78,6 +97,42 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
                 }
                 .onFailure { message = "Location privacy settings could not be saved." }
             saving = false
+        }
+    }
+
+    fun addSafePlace() {
+        if (parentToken == null) return
+        val latitude = latitudeText.toDoubleOrNull()
+        val longitude = longitudeText.toDoubleOrNull()
+        val radius = radiusText.toIntOrNull()
+        if (safePlaceName.isBlank() || latitude == null || longitude == null || radius == null || latitude !in -90.0..90.0 || longitude !in -180.0..180.0 || radius !in 25..5_000) {
+            message = "Enter a name, valid latitude and longitude, and a radius from 25 to 5,000 meters."
+            return
+        }
+        savingPlace = true
+        scope.launch {
+            runCatching { EdukCloudRepository.createSafePlace(parentToken, child.id, SafePlaceRequest(safePlaceName.trim(), latitude, longitude, radius)) }
+                .onSuccess {
+                    safePlaceName = ""
+                    latitudeText = ""
+                    longitudeText = ""
+                    radiusText = "150"
+                    message = "Safe place added. Eduk will record an arrival or departure after a location is shared."
+                    load()
+                }
+                .onFailure { message = "That safe place could not be saved." }
+            savingPlace = false
+        }
+    }
+
+    fun deleteSafePlace(place: CloudSafePlace) {
+        if (parentToken == null) return
+        savingPlace = true
+        scope.launch {
+            runCatching { EdukCloudRepository.deleteSafePlace(parentToken, child.id, place.id) }
+                .onSuccess { message = "Safe place removed."; load() }
+                .onFailure { message = "That safe place could not be removed." }
+            savingPlace = false
         }
     }
 
@@ -137,6 +192,56 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
                 item {
                     Button(onClick = ::save, enabled = !saving, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = LocationNavy), shape = RoundedCornerShape(16.dp)) {
                         Text(if (saving) "Saving privacy settings…" else "Save location privacy settings", fontWeight = FontWeight.Bold)
+                    }
+                }
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Safe places", color = LocationNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Add a home, school, or another agreed place. Arrival and departure events are evaluated only after a student shares a location.", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                }
+                item {
+                    OutlinedTextField(value = safePlaceName, onValueChange = { safePlaceName = it }, label = { Text("Place name") }, placeholder = { Text("School") }, modifier = Modifier.fillMaxWidth())
+                }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = latitudeText, onValueChange = { latitudeText = it }, label = { Text("Latitude") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = longitudeText, onValueChange = { longitudeText = it }, label = { Text("Longitude") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                item {
+                    OutlinedTextField(
+                        value = radiusText, onValueChange = { radiusText = it.filter(Char::isDigit) }, label = { Text("Radius (meters)") }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedButton(onClick = ::addSafePlace, enabled = !savingPlace, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                        Text(if (savingPlace) "Saving safe place…" else "Add safe place", color = LocationNavy, fontWeight = FontWeight.Bold)
+                    }
+                }
+                if (safePlaces.isEmpty()) item {
+                    Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                        Text("No safe places have been added yet.", color = LocationMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp))
+                    }
+                }
+                items(safePlaces, key = { it.id }) { place ->
+                    Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(place.name, color = LocationNavy, fontWeight = FontWeight.ExtraBold)
+                                Text("${place.radiusMeters} m · ${place.latitude}, ${place.longitude}", color = LocationMuted, style = MaterialTheme.typography.labelSmall)
+                            }
+                            OutlinedButton(onClick = { deleteSafePlace(place) }, enabled = !savingPlace, shape = RoundedCornerShape(12.dp)) {
+                                Text("Remove", color = Color(0xFF9B2C1C), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

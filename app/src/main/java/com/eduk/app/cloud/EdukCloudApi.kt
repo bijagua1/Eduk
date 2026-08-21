@@ -287,6 +287,15 @@ data class SafePlaceRequest(
     val longitude: Double,
     val radiusMeters: Int
 )
+data class CloudSafePlace(
+    val id: String,
+    val name: String,
+    val latitude: String,
+    val longitude: String,
+    val radiusMeters: Int,
+    val isEnabled: Boolean
+)
+data class SafePlaceListResponse(val places: List<CloudSafePlace>)
 data class StudentLocationReportRequest(
     val latitude: Double,
     val longitude: Double,
@@ -411,6 +420,12 @@ interface EdukCloudService {
         @Body request: LocationSettingsRequest
     ): Response<LocationSettingsResponse>
 
+    @GET("api/mobile/v1/children/{childId}/safe-places")
+    suspend fun getSafePlaces(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<SafePlaceListResponse>
+
     @POST("api/mobile/v1/children/{childId}/safe-places")
     suspend fun createSafePlace(
         @Header("Authorization") authorization: String,
@@ -533,6 +548,7 @@ object EdukCloudRepository {
     suspend fun getLocationSettings(parentToken: String, childId: String) = body(service.getLocationSettings(bearer(parentToken), childId))
     suspend fun saveLocationSettings(parentToken: String, childId: String, request: LocationSettingsRequest) =
         body(service.saveLocationSettings(bearer(parentToken), childId, request))
+    suspend fun getSafePlaces(parentToken: String, childId: String) = body(service.getSafePlaces(bearer(parentToken), childId))
     suspend fun createSafePlace(parentToken: String, childId: String, request: SafePlaceRequest) =
         body(service.createSafePlace(bearer(parentToken), childId, request))
     suspend fun deleteSafePlace(parentToken: String, childId: String, safePlaceId: String) =
