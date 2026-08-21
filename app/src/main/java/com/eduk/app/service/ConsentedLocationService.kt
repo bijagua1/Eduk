@@ -1,6 +1,7 @@
 package com.eduk.app.service
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -65,7 +66,7 @@ class ConsentedLocationService : Service() {
             .setMinUpdateIntervalMillis(MIN_UPDATE_INTERVAL_MS)
             .setMaxUpdateDelayMillis(UPDATE_INTERVAL_MS * 2)
             .build()
-        locationClient.requestLocationUpdates(request, callback, mainLooper)
+        requestUpdatesSafely(request)
         return START_NOT_STICKY
     }
 
@@ -79,6 +80,13 @@ class ConsentedLocationService : Service() {
     private fun hasLocationPermission(): Boolean =
         ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    @SuppressLint("MissingPermission")
+    private fun requestUpdatesSafely(request: LocationRequest) {
+        if (!hasLocationPermission()) return stopSharing()
+        runCatching { locationClient.requestLocationUpdates(request, callback, mainLooper) }
+            .onFailure { stopSharing() }
+    }
 
     private fun stopSharing() {
         sessionStore.setLocationSharingActive(false)

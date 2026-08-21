@@ -1,8 +1,12 @@
 package com.eduk.app.ui
 
 import android.Manifest
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,6 +40,7 @@ import com.eduk.app.cloud.StudentLocationReportRequest
 import com.eduk.app.cloud.StudentStateResponse
 import com.eduk.app.service.AppMonitoringService
 import com.eduk.app.service.ConsentedLocationService
+import com.eduk.app.service.EdukDeviceAdminReceiver
 import com.eduk.app.ui.theme.EdukTheme
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
@@ -239,6 +244,34 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
                 learningProgress?.let { progress ->
                     StudentProgressCard(progress)
+                    Spacer(Modifier.height(20.dp))
+                }
+                if (!AppMonitoringService.isServiceRunning()) {
+                    Surface(color = Color(0xFFFFF6EE), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(20.dp)) {
+                            Text("Finish protection setup", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Spacer(Modifier.height(6.dp))
+                            Text("To apply your parent’s app rules, enable Eduk in Android Accessibility. Eduk only checks which app is open; it does not read messages or page content.", color = Color(0xFF624833), style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.height(12.dp))
+                            OutlinedButton(
+                                onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
+                                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
+                            ) { Text("Open Accessibility settings", fontWeight = FontWeight.Bold) }
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    val component = ComponentName(context, EdukDeviceAdminReceiver::class.java)
+                                    context.startActivity(
+                                        Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                                            .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                                            .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Allows Eduk to apply the device protection your parent configured.")
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
+                            ) { Text("Enable device protection", fontWeight = FontWeight.Bold) }
+                        }
+                    }
                     Spacer(Modifier.height(20.dp))
                 }
                 if (isLocationSharingEnabled) {
