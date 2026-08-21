@@ -35,6 +35,7 @@ import com.eduk.app.cloud.CloudChild
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.LearningProgressResponse
 import com.eduk.app.cloud.SubjectLearningProgress
+import com.eduk.app.cloud.TopicLearningProgress
 import kotlinx.coroutines.launch
 
 private val AnalyticsNavy = Color(0xFF0B1F3A)
@@ -101,6 +102,14 @@ fun ParentLearningProgressSheet(child: CloudChild, parentToken: String?, onDismi
                 } else {
                     items(data.bySubject, key = { it.subject }) { subject -> SubjectAnalyticsRow(subject) }
                 }
+                if (data.byTopic.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(4.dp))
+                        Text("Recommended learning focus", color = AnalyticsNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                        Text("Eduk prioritizes these lower-accuracy topics when choosing approved questions automatically.", color = AnalyticsMuted, style = MaterialTheme.typography.bodySmall)
+                    }
+                    items(data.byTopic.take(3), key = { "${it.subject}:${it.topic}" }) { topic -> TopicAnalyticsRow(topic) }
+                }
             }
         }
     }
@@ -144,6 +153,19 @@ private fun SubjectAnalyticsRow(subject: SubjectLearningProgress) {
             Surface(color = AnalyticsOrange.copy(alpha = .13f), shape = RoundedCornerShape(99.dp)) {
                 Text("${subject.accuracyPercent}%", color = AnalyticsOrange, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun TopicAnalyticsRow(topic: TopicLearningProgress) {
+    Surface(color = Color(0xFFFFF3E8), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(topic.topic, color = AnalyticsInk, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold)
+                Text("${topic.subject} · ${topic.correct}/${topic.attempts} correct", color = AnalyticsMuted, style = MaterialTheme.typography.bodySmall)
+            }
+            Text("${topic.accuracyPercent}%", color = AnalyticsOrange, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold)
         }
     }
 }

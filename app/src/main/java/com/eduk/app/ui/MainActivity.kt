@@ -225,6 +225,11 @@ private fun StudentProgressCard(progress: LearningProgressResponse) {
                 val leadingSubject = progress.bySubject.first()
                 Text("Most practiced subject", color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall)
                 Text("${leadingSubject.subject} · ${leadingSubject.accuracyPercent}% accuracy", color = HomeNavy, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                progress.byTopic.firstOrNull()?.let { focusTopic ->
+                    Spacer(Modifier.height(10.dp))
+                    Text("Next focus", color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall)
+                    Text("${focusTopic.topic} · let’s build confidence", color = HomeOrange, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
             } else {
                 Spacer(Modifier.height(14.dp))
                 Text("Complete an approved challenge to start your streak and subject progress.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall)

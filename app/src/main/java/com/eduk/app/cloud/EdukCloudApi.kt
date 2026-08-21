@@ -175,6 +175,14 @@ data class SubjectLearningProgress(
     val minutesEarned: Int,
     val accuracyPercent: Int
 )
+data class TopicLearningProgress(
+    val subject: String,
+    val topic: String,
+    val attempts: Int,
+    val correct: Int,
+    val minutesEarned: Int,
+    val accuracyPercent: Int
+)
 data class LearningProgressResponse(
     val totalAttempts: Int,
     val correctAttempts: Int,
@@ -183,7 +191,8 @@ data class LearningProgressResponse(
     val currentStreak: Int,
     val xp: Int,
     val completedChallenges: Int,
-    val bySubject: List<SubjectLearningProgress>
+    val bySubject: List<SubjectLearningProgress>,
+    val byTopic: List<TopicLearningProgress> = emptyList()
 )
 data class ParentQuestion(
     val id: String,
