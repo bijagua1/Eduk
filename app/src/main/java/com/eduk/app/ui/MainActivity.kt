@@ -5,6 +5,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -270,6 +271,26 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                                 onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
                                 modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
                             ) { Text("Open Accessibility settings", fontWeight = FontWeight.Bold) }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    "If Eduk is greyed out or says “Restricted settings”, open Eduk app info, tap the three-dot menu, choose “Allow restricted settings”, then return here.",
+                                    color = Color(0xFF624833),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                                .setData(Uri.fromParts("package", context.packageName, null))
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) { Text("Open Eduk app info", fontWeight = FontWeight.Bold) }
+                            }
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(
                                 onClick = {
