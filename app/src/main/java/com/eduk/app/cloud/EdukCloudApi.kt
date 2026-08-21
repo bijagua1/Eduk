@@ -136,6 +136,34 @@ data class StudentPolicyResponse(
     val schedules: List<CloudSchedule>,
     val rewardRules: List<CloudRewardRule>
 )
+data class ParentPolicyResponse(
+    val policy: CloudControlPolicy,
+    val appRules: List<CloudAppRule>,
+    val schedules: List<CloudSchedule>,
+    val rewardRules: List<CloudRewardRule>
+)
+data class AppRuleRequest(
+    val packageName: String,
+    val displayName: String? = null,
+    val category: String? = null,
+    val accessMode: String,
+    val dailyLimitMinutes: Int? = null
+)
+data class ScheduleRequest(
+    val name: String,
+    val daysOfWeek: List<Int>,
+    val startMinuteOfDay: Int,
+    val endMinuteOfDay: Int,
+    val mode: String
+)
+data class RewardRuleRequest(
+    val name: String,
+    val subject: String? = null,
+    val correctAnswerMinutes: Int,
+    val completedChallengeMinutes: Int = 0,
+    val dailyMaxEarnedMinutes: Int,
+    val minimumCorrectAnswers: Int = 1
+)
 data class StudyMaterialRequest(
     val sourceType: String,
     val displayName: String,
@@ -194,6 +222,33 @@ interface EdukCloudService {
 
     @GET("api/mobile/v1/students/policy")
     suspend fun getStudentPolicy(@Header("Authorization") authorization: String): Response<StudentPolicyResponse>
+
+    @GET("api/mobile/v1/children/{childId}/policy")
+    suspend fun getParentPolicy(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<ParentPolicyResponse>
+
+    @POST("api/mobile/v1/children/{childId}/app-rules")
+    suspend fun saveAppRule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: AppRuleRequest
+    ): Response<Any>
+
+    @POST("api/mobile/v1/children/{childId}/schedules")
+    suspend fun createSchedule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: ScheduleRequest
+    ): Response<Any>
+
+    @POST("api/mobile/v1/children/{childId}/reward-rules")
+    suspend fun createRewardRule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: RewardRuleRequest
+    ): Response<Any>
 
     @POST("api/mobile/v1/children/{childId}/study-materials")
     suspend fun submitStudyMaterial(
@@ -262,6 +317,10 @@ object EdukCloudRepository {
     suspend fun loginStudent(request: StudentLoginRequest) = body(service.loginStudent(request))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
+    suspend fun getParentPolicy(parentToken: String, childId: String) = body(service.getParentPolicy(bearer(parentToken), childId))
+    suspend fun saveAppRule(parentToken: String, childId: String, request: AppRuleRequest) = body(service.saveAppRule(bearer(parentToken), childId, request))
+    suspend fun createSchedule(parentToken: String, childId: String, request: ScheduleRequest) = body(service.createSchedule(bearer(parentToken), childId, request))
+    suspend fun createRewardRule(parentToken: String, childId: String, request: RewardRuleRequest) = body(service.createRewardRule(bearer(parentToken), childId, request))
     suspend fun submitStudyMaterial(studentToken: String, childId: String, request: StudyMaterialRequest) =
         body(service.submitStudyMaterial(bearer(studentToken), childId, request))
     suspend fun updateTime(parentToken: String, childId: String, deltaMinutes: Int) = body(service.updateTime(bearer(parentToken), childId, TimeAdjustmentRequest(deltaMinutes)))

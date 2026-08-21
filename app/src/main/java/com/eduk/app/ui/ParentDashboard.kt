@@ -49,6 +49,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
     var pairingCode by remember { mutableStateOf<PairingCodeResponse?>(null) }
     var history by remember { mutableStateOf<List<LearningHistoryEvent>>(emptyList()) }
     var showHistory by remember { mutableStateOf(false) }
+    var controlsChild by remember { mutableStateOf<CloudChild?>(null) }
 
     fun refreshDashboard() {
         val token = sessionStore.parentToken()
@@ -214,6 +215,17 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(14.dp))
+                Button(
+                    onClick = { selectedChild = null; controlsChild = child },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = DashboardNavy),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Lock, null)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Manage app & learning rules")
+                }
+                Spacer(Modifier.height(10.dp))
                 OutlinedButton(onClick = { generatePairing(child) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
                     Icon(Icons.Default.Link, null)
                     Spacer(Modifier.width(10.dp))
@@ -227,6 +239,15 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                 }
             }
         }
+    }
+
+    controlsChild?.let { child ->
+        ChildPolicyManagerSheet(
+            child = child,
+            parentToken = sessionStore.parentToken(),
+            onDismiss = { controlsChild = null },
+            onPolicyChanged = { refreshDashboard() }
+        )
     }
 
     pairingCode?.let { pairing ->

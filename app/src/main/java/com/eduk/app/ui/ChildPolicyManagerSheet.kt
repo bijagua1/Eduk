@@ -1,0 +1,312 @@
+package com.eduk.app.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.unit.dp
+import com.eduk.app.cloud.AppRuleRequest
+import com.eduk.app.cloud.CloudChild
+import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.ParentPolicyResponse
+import com.eduk.app.cloud.RewardRuleRequest
+import com.eduk.app.cloud.ScheduleRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+
+private val RulesNavy = Color(0xFF0B1F3A)
+private val RulesOrange = Color(0xFFFF7A1A)
+private val RulesInk = Color(0xFF182C45)
+private val RulesMuted = Color(0xFF62738A)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChildPolicyManagerSheet(
+    child: CloudChild,
+    parentToken: String?,
+    onDismiss: () -> Unit,
+    onPolicyChanged: () -> Unit
+) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var policyState by remember { mutableStateOf<ParentPolicyResponse?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var savingKey by remember { mutableStateOf<String?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var minutesPerAnswer by remember { mutableStateOf("10") }
+    var dailyMaxMinutes by remember { mutableStateOf("60") }
+
+    fun reload() {
+        if (parentToken == null) {
+            loading = false
+            message = "Your parent session has expired. Sign in again to manage rules."
+            return
+        }
+        loading = true
+        scope.launch {
+            runCatching { EdukCloudRepository.getParentPolicy(parentToken, child.id) }
+                .onSuccess {
+                    policyState = it
+                    val firstReward = it.rewardRules.firstOrNull()
+                    if (firstReward != null) {
+                        minutesPerAnswer = firstReward.correctAnswerMinutes.toString()
+                        dailyMaxMinutes = firstReward.dailyMaxEarnedMinutes.toString()
+                    } else {
+                        dailyMaxMinutes = it.policy.dailyEarnedTimeCapMinutes.toString()
+                    }
+                    message = null
+                }
+                .onFailure { message = "We could not load these controls. Check your connection and try again." }
+            loading = false
+        }
+    }
+
+    fun saveAppPreset(key: String, request: AppRuleRequest) {
+        if (parentToken == null) return
+        savingKey = key
+        scope.launch {
+            runCatching { EdukCloudRepository.saveAppRule(parentToken, child.id, request) }
+                .onSuccess { message = "${request.displayName} rule saved."; reload(); onPolicyChanged() }
+                .onFailure { message = "That app rule could not be saved." }
+            savingKey = null
+        }
+    }
+
+    fun saveSchoolSchedule() {
+        if (parentToken == null) return
+        savingKey = "school"
+        scope.launch {
+            runCatching {
+                EdukCloudRepository.createSchedule(
+                    parentToken, child.id,
+                    ScheduleRequest("School hours", listOf(1, 2, 3, 4, 5), 8 * 60, 15 * 60, "block_entertainment")
+                )
+            }.onSuccess { message = "School-hours rule saved."; reload(); onPolicyChanged() }
+                .onFailure { message = "The school-hours rule could not be saved." }
+            savingKey = null
+        }
+    }
+
+    fun saveRewardRule() {
+        val earned = minutesPerAnswer.toIntOrNull()
+        val cap = dailyMaxMinutes.toIntOrNull()
+        if (earned == null || earned !in 0..120 || cap == null || cap !in 0..1440) {
+            message = "Use whole-number rewards from 0–120 minutes and a daily cap from 0–1,440 minutes."
+            return
+        }
+        if (parentToken == null) return
+        savingKey = "reward"
+        scope.launch {
+            runCatching {
+                EdukCloudRepository.createRewardRule(
+                    parentToken, child.id,
+                    RewardRuleRequest("Daily learning reward", null, earned, 0, cap, 1)
+                )
+            }.onSuccess { message = "Learning reward saved."; reload(); onPolicyChanged() }
+                .onFailure { message = "The learning reward could not be saved." }
+            savingKey = null
+        }
+    }
+
+    LaunchedEffect(child.id) { reload() }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+    ) {
+        LazyColumn(
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
+        ) {
+            item {
+                Text("Rules for ${child.displayName}", color = RulesNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                Spacer(Modifier.height(5.dp))
+                Text("Changes synchronize to their paired phone. Eduk keeps the last confirmed policy available offline.", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+            }
+            if (loading) item {
+                Column(Modifier.fillMaxWidth().padding(vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = RulesOrange)
+                    Spacer(Modifier.height(10.dp))
+                    Text("Loading protected settings…", color = RulesMuted)
+                }
+            }
+            message?.let { status -> item { StatusCard(status) } }
+            policyState?.let { current ->
+                item {
+                    Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Protection status", color = RulesInk, fontWeight = FontWeight.ExtraBold)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                if (current.policy.lockEntertainmentUntilLearning) "Entertainment apps require earned time." else "Learning gate is currently turned off.",
+                                color = RulesMuted, style = MaterialTheme.typography.bodySmall
+                            )
+                            Text("Policy revision ${current.policy.revision}", color = RulesOrange, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                item {
+                    SectionHeading("Popular app controls", "Choose what happens when ${child.displayName} opens an app. These are real Android package rules.")
+                }
+                item {
+                    QuickAppRuleRow(
+                        title = "YouTube", subtitle = "Require learning time first", isSaving = savingKey == "youtube",
+                        onSave = { saveAppPreset("youtube", AppRuleRequest("com.google.android.youtube", "YouTube", "Video", "learning_gate")) }
+                    )
+                }
+                item {
+                    QuickAppRuleRow(
+                        title = "TikTok", subtitle = "Block at all times", isSaving = savingKey == "tiktok",
+                        onSave = { saveAppPreset("tiktok", AppRuleRequest("com.zhiliaoapp.musically", "TikTok", "Social", "block")) }
+                    )
+                }
+                item {
+                    QuickAppRuleRow(
+                        title = "Instagram", subtitle = "Require learning time first", isSaving = savingKey == "instagram",
+                        onSave = { saveAppPreset("instagram", AppRuleRequest("com.instagram.android", "Instagram", "Social", "learning_gate")) }
+                    )
+                }
+                item {
+                    QuickAppRuleRow(
+                        title = "Roblox", subtitle = "Require learning time first", isSaving = savingKey == "roblox",
+                        onSave = { saveAppPreset("roblox", AppRuleRequest("com.roblox.client", "Roblox", "Games", "learning_gate")) }
+                    )
+                }
+                if (current.appRules.isNotEmpty()) {
+                    item { SectionHeading("Active app rules", "The paired student device enforces these apps using the latest policy.") }
+                    items(current.appRules, key = { it.id }) { rule ->
+                        Surface(color = Color.White, shape = RoundedCornerShape(16.dp), shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(rule.displayName ?: rule.packageName, color = RulesInk, fontWeight = FontWeight.Bold)
+                                    Text(rule.packageName, color = RulesMuted, style = MaterialTheme.typography.labelSmall)
+                                }
+                                ModePill(rule.accessMode)
+                            }
+                        }
+                    }
+                }
+                item { HorizontalDivider(color = Color(0xFFE4E8EF)) }
+                item { SectionHeading("Earned time", "Set how much screen time a correct answer earns, then cap it for the day.") }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = minutesPerAnswer, onValueChange = { minutesPerAnswer = it.filter(Char::isDigit) },
+                            label = { Text("Minutes / answer") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = dailyMaxMinutes, onValueChange = { dailyMaxMinutes = it.filter(Char::isDigit) },
+                            label = { Text("Daily cap") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                item {
+                    Button(
+                        onClick = ::saveRewardRule, enabled = savingKey == null,
+                        modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = RulesOrange), shape = RoundedCornerShape(16.dp)
+                    ) { Text(if (savingKey == "reward") "Saving reward…" else "Save learning reward", fontWeight = FontWeight.Bold) }
+                }
+                item { HorizontalDivider(color = Color(0xFFE4E8EF)) }
+                item { SectionHeading("Schedules", "Create a protected routine for school time, homework, and bedtime.") }
+                item {
+                    OutlinedButton(onClick = ::saveSchoolSchedule, enabled = savingKey == null, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                        Text(if (savingKey == "school") "Saving school hours…" else "Block entertainment · Mon–Fri · 8:00 AM–3:00 PM", fontWeight = FontWeight.Bold)
+                    }
+                }
+                if (current.schedules.isNotEmpty()) {
+                    items(current.schedules, key = { it.id }) { schedule ->
+                        Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(14.dp)) {
+                                Text(schedule.name, color = RulesInk, fontWeight = FontWeight.Bold)
+                                Text("${schedule.mode.replace('_', ' ')} · days ${schedule.daysOfWeek}", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeading(title: String, description: String) {
+    Column {
+        Text(title, color = RulesNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+        Spacer(Modifier.height(3.dp))
+        Text(description, color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun QuickAppRuleRow(title: String, subtitle: String, isSaving: Boolean, onSave: () -> Unit) {
+    Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = RulesInk, fontWeight = FontWeight.ExtraBold)
+                Text(subtitle, color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+            }
+            Button(onClick = onSave, enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = RulesNavy), shape = RoundedCornerShape(12.dp)) {
+                Text(if (isSaving) "Saving" else "Apply")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModePill(mode: String) {
+    val label = when (mode) {
+        "block" -> "Blocked"
+        "learning_gate" -> "Learn first"
+        else -> "Allowed"
+    }
+    val tint = when (mode) {
+        "block" -> Color(0xFF9B2C1C)
+        "learning_gate" -> Color(0xFF9A4F17)
+        else -> Color(0xFF147A50)
+    }
+    Surface(color = tint.copy(alpha = .12f), shape = RoundedCornerShape(99.dp)) {
+        Text(label, color = tint, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp))
+    }
+}
+
+@Composable
+private fun StatusCard(message: String) {
+    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+        Text(message, color = Color(0xFF8F3C2C), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp))
+    }
+}
