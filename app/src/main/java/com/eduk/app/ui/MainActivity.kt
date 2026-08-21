@@ -82,7 +82,7 @@ fun EdukApp(startDestination: String) {
             )
         }
         composable("subscription") {
-            SubscriptionPaywallScreen(onSubscribed = { navController.navigate("add_child") })
+            SubscriptionPaywallScreen(onContinue = { navController.navigate("add_child") })
         }
         composable("add_child") {
             AddChildScreen(onChildCreated = {

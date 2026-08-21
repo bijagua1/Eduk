@@ -62,7 +62,20 @@ data class CloudChild(
     val linkedDeviceLabel: String? = null
 )
 
-data class DashboardResponse(val children: List<CloudChild>)
+data class EntitlementLimits(
+    val maxChildren: Int,
+    val locationSharing: Boolean,
+    val advancedReports: Boolean,
+    val customSchedules: Boolean
+)
+data class EntitlementResponse(
+    val tier: String,
+    val sourceStatus: String,
+    val trialEndsAt: String? = null,
+    val subscriptionExpiresAt: String? = null,
+    val limits: EntitlementLimits
+)
+data class DashboardResponse(val children: List<CloudChild>, val entitlements: EntitlementResponse? = null)
 data class PairingCodeResponse(val childId: String, val code: String, val expiresAt: String)
 data class StudentPairRequest(
     val username: String,
@@ -320,6 +333,9 @@ interface EdukCloudService {
     @GET("api/mobile/v1/parents/dashboard")
     suspend fun getDashboard(@Header("Authorization") authorization: String): Response<DashboardResponse>
 
+    @GET("api/mobile/v1/parents/entitlements")
+    suspend fun getEntitlements(@Header("Authorization") authorization: String): Response<EntitlementResponse>
+
     @POST("api/mobile/v1/children")
     suspend fun createChild(
         @Header("Authorization") authorization: String,
@@ -523,6 +539,7 @@ object EdukCloudRepository {
     suspend fun loginParent(request: ParentLoginRequest) = body(service.loginParent(request))
     suspend fun refreshParentSession(parentToken: String) = body(service.refreshParentSession(bearer(parentToken)))
     suspend fun getDashboard(parentToken: String) = body(service.getDashboard(bearer(parentToken)))
+    suspend fun getEntitlements(parentToken: String) = body(service.getEntitlements(bearer(parentToken)))
     suspend fun createChild(parentToken: String, request: CreateChildRequest) = body(service.createChild(bearer(parentToken), request))
     suspend fun createPairingCode(parentToken: String, childId: String) = body(service.createPairingCode(bearer(parentToken), childId))
     suspend fun pairStudentDevice(request: StudentPairRequest) = body(service.pairStudentDevice(request))
