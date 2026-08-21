@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.eduk.app.cloud.AppRuleRequest
 import com.eduk.app.cloud.CloudChild
 import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.LearningPreferencesRequest
 import com.eduk.app.cloud.ParentPolicyResponse
 import com.eduk.app.cloud.RewardRuleRequest
 import com.eduk.app.cloud.ScheduleRequest
@@ -66,6 +67,9 @@ fun ChildPolicyManagerSheet(
     var message by remember { mutableStateOf<String?>(null) }
     var minutesPerAnswer by remember { mutableStateOf("10") }
     var dailyMaxMinutes by remember { mutableStateOf("60") }
+    var subjectsText by remember { mutableStateOf("") }
+    var selectedDifficulty by remember { mutableStateOf("adaptive") }
+    var learningGoals by remember { mutableStateOf("") }
 
     fun reload() {
         if (parentToken == null) {
@@ -75,15 +79,20 @@ fun ChildPolicyManagerSheet(
         }
         loading = true
         scope.launch {
-            runCatching { EdukCloudRepository.getParentPolicy(parentToken, child.id) }
-                .onSuccess {
-                    policyState = it
-                    val firstReward = it.rewardRules.firstOrNull()
+            runCatching {
+                EdukCloudRepository.getParentPolicy(parentToken, child.id) to
+                    EdukCloudRepository.getLearningPreferences(parentToken, child.id)
+            }.onSuccess { (policy, preferences) ->
+                    policyState = policy
+                    subjectsText = preferences.subjects.joinToString(", ")
+                    selectedDifficulty = preferences.difficulty
+                    learningGoals = preferences.goals.orEmpty()
+                    val firstReward = policy.rewardRules.firstOrNull()
                     if (firstReward != null) {
                         minutesPerAnswer = firstReward.correctAnswerMinutes.toString()
                         dailyMaxMinutes = firstReward.dailyMaxEarnedMinutes.toString()
                     } else {
-                        dailyMaxMinutes = it.policy.dailyEarnedTimeCapMinutes.toString()
+                        dailyMaxMinutes = policy.policy.dailyEarnedTimeCapMinutes.toString()
                     }
                     message = null
                 }
@@ -135,6 +144,26 @@ fun ChildPolicyManagerSheet(
                 )
             }.onSuccess { message = "Learning reward saved."; reload(); onPolicyChanged() }
                 .onFailure { message = "The learning reward could not be saved." }
+            savingKey = null
+        }
+    }
+
+    fun saveLearningPreferences() {
+        if (parentToken == null) return
+        val subjects = subjectsText.split(",").map(String::trim).filter(String::isNotBlank).distinct()
+        if (subjects.size > 12) {
+            message = "Use up to 12 subjects, separated by commas."
+            return
+        }
+        savingKey = "learning-profile"
+        scope.launch {
+            runCatching {
+                EdukCloudRepository.saveLearningPreferences(
+                    parentToken, child.id,
+                    LearningPreferencesRequest(subjects, selectedDifficulty, learningGoals.trim().ifBlank { null })
+                )
+            }.onSuccess { message = "Adaptive learning preferences saved." }
+                .onFailure { message = "Learning preferences could not be saved." }
             savingKey = null
         }
     }
@@ -218,6 +247,49 @@ fun ChildPolicyManagerSheet(
                             }
                         }
                     }
+                }
+                item { HorizontalDivider(color = Color(0xFFE4E8EF)) }
+                item { SectionHeading("Adaptive learning", "Choose what Eduk should prioritize when it selects approved questions automatically.") }
+                item {
+                    OutlinedTextField(
+                        value = subjectsText,
+                        onValueChange = { subjectsText = it },
+                        label = { Text("Subjects, separated by commas") },
+                        placeholder = { Text("Math, Science, Reading") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    Text("Question difficulty", color = RulesInk, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf("foundation" to "Build up", "adaptive" to "Adaptive", "stretch" to "Stretch").forEach { (value, label) ->
+                            OutlinedButton(
+                                onClick = { selectedDifficulty = value },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (selectedDifficulty == value) RulesNavy else Color.Transparent,
+                                    contentColor = if (selectedDifficulty == value) Color.White else RulesNavy
+                                )
+                            ) { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        }
+                    }
+                }
+                item {
+                    OutlinedTextField(
+                        value = learningGoals,
+                        onValueChange = { learningGoals = it },
+                        label = { Text("Learning goal (optional)") },
+                        placeholder = { Text("Prepare for the solar system test") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+                }
+                item {
+                    Button(
+                        onClick = ::saveLearningPreferences, enabled = savingKey == null,
+                        modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = RulesNavy), shape = RoundedCornerShape(16.dp)
+                    ) { Text(if (savingKey == "learning-profile") "Saving preferences…" else "Save learning preferences", fontWeight = FontWeight.Bold) }
                 }
                 item { HorizontalDivider(color = Color(0xFFE4E8EF)) }
                 item { SectionHeading("Earned time", "Set how much screen time a correct answer earns, then cap it for the day.") }

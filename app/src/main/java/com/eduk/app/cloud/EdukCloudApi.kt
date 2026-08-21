@@ -214,6 +214,16 @@ data class ParentPolicyResponse(
     val schedules: List<CloudSchedule>,
     val rewardRules: List<CloudRewardRule>
 )
+data class LearningPreferencesRequest(
+    val subjects: List<String>,
+    val difficulty: String,
+    val goals: String? = null
+)
+data class LearningPreferencesResponse(
+    val subjects: List<String>,
+    val difficulty: String,
+    val goals: String? = null
+)
 data class AppRuleRequest(
     val packageName: String,
     val displayName: String? = null,
@@ -339,6 +349,19 @@ interface EdukCloudService {
         @Path("childId") childId: String
     ): Response<ParentPolicyResponse>
 
+    @GET("api/mobile/v1/children/{childId}/learning-preferences")
+    suspend fun getLearningPreferences(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<LearningPreferencesResponse>
+
+    @PUT("api/mobile/v1/children/{childId}/learning-preferences")
+    suspend fun saveLearningPreferences(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: LearningPreferencesRequest
+    ): Response<LearningPreferencesResponse>
+
     @POST("api/mobile/v1/children/{childId}/app-rules")
     suspend fun saveAppRule(
         @Header("Authorization") authorization: String,
@@ -438,6 +461,9 @@ object EdukCloudRepository {
     suspend fun reviewParentQuestion(parentToken: String, childId: String, questionId: String, reviewStatus: String) =
         body(service.reviewParentQuestion(bearer(parentToken), childId, questionId, ReviewQuestionRequest(reviewStatus)))
     suspend fun getParentPolicy(parentToken: String, childId: String) = body(service.getParentPolicy(bearer(parentToken), childId))
+    suspend fun getLearningPreferences(parentToken: String, childId: String) = body(service.getLearningPreferences(bearer(parentToken), childId))
+    suspend fun saveLearningPreferences(parentToken: String, childId: String, request: LearningPreferencesRequest) =
+        body(service.saveLearningPreferences(bearer(parentToken), childId, request))
     suspend fun saveAppRule(parentToken: String, childId: String, request: AppRuleRequest) = body(service.saveAppRule(bearer(parentToken), childId, request))
     suspend fun createSchedule(parentToken: String, childId: String, request: ScheduleRequest) = body(service.createSchedule(bearer(parentToken), childId, request))
     suspend fun createRewardRule(parentToken: String, childId: String, request: RewardRuleRequest) = body(service.createRewardRule(bearer(parentToken), childId, request))
