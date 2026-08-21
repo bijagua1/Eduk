@@ -101,7 +101,9 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
             )
         }
     ) { padding ->
-        Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = 4)
+            Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
@@ -109,21 +111,16 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 .imePadding()
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = EdukNavy
-            ) {
-                Column(Modifier.padding(24.dp)) {
-                    Icon(Icons.Default.PersonAdd, null, tint = EdukOrange, modifier = Modifier.size(34.dp))
-                    Spacer(Modifier.height(18.dp))
-                    Text("A real account for their own phone.", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(6.dp))
-                    Text("Create the username and PIN your child will use, then give them the one-time pairing code.", color = Color.White.copy(alpha = 0.74f), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+            EdukGlowHero(
+                overline = "Family setup · Step 1 of 2",
+                title = "A real account for their own phone.",
+                description = "Create the username and PIN they will use, then give them the one-time pairing code.",
+                icon = Icons.Default.PersonAdd
+            )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+            EdukStepPill("Private child credentials")
+            Spacer(Modifier.height(16.dp))
             Text("Child identity", color = EdukNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
@@ -209,6 +206,7 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 else Text("Create account & pairing code", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
             }
             Spacer(Modifier.height(24.dp))
+            }
         }
     }
 

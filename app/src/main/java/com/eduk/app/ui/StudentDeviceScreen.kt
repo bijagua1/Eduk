@@ -40,6 +40,18 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
     var pairingCode by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = StudentNavy,
+        unfocusedTextColor = StudentNavy,
+        disabledTextColor = StudentNavy,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        focusedBorderColor = StudentOrange,
+        unfocusedBorderColor = Color(0xFF8190A0),
+        focusedLabelColor = StudentOrange,
+        unfocusedLabelColor = Color(0xFF52667D),
+        cursorColor = StudentOrange
+    )
 
     fun continueToStudentMode() {
         isSubmitting = true
@@ -80,24 +92,19 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
     }
 
     Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
-        Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = if (isPairing) 2 else 3)
+            Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(34.dp))
-            Surface(color = StudentNavy, shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(26.dp)) {
-                    Icon(if (isPairing) Icons.Default.Link else Icons.Default.LockOpen, null, tint = StudentOrange, modifier = Modifier.size(38.dp))
-                    Spacer(Modifier.height(18.dp))
-                    Text(if (isPairing) "Pair this phone" else "Welcome back", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        if (isPairing) "Ask your parent for your username, PIN, and one-time pairing code." else "Sign in with the student account your parent created.",
-                        color = Color.White.copy(alpha = 0.74f),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+            EdukGlowHero(
+                overline = if (isPairing) "This is your phone" else "Student account",
+                title = if (isPairing) "Pair this phone." else "Welcome back.",
+                description = if (isPairing) "Use the username, PIN, and one-time code that your parent created for you." else "Sign in with the student credentials your parent created.",
+                icon = if (isPairing) Icons.Default.Link else Icons.Default.LockOpen
+            )
 
             Spacer(Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -117,7 +124,9 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                 )
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(16.dp))
+            EdukStepPill(if (isPairing) "One-time secure pairing" else "Returning student")
+            Spacer(Modifier.height(16.dp))
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it.lowercase().filter { char -> char.isLetterOrDigit() || char in "._-" } },
@@ -125,6 +134,8 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = StudentNavy),
+                colors = inputColors,
                 singleLine = true
             )
             Spacer(Modifier.height(12.dp))
@@ -137,6 +148,8 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = StudentNavy),
+                colors = inputColors,
                 singleLine = true
             )
             if (isPairing) {
@@ -149,6 +162,8 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = StudentNavy),
+                    colors = inputColors,
                     singleLine = true
                 )
             }
@@ -168,6 +183,7 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                 else Text(if (isPairing) "Pair & enter Student Mode" else "Sign in to Student Mode", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(28.dp))
+            }
         }
     }
 }

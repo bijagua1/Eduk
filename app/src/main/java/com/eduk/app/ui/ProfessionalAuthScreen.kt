@@ -98,7 +98,9 @@ fun ProfessionalAuthScreen(
     }
 
     Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
-        Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = if (isLogin) 0 else 1)
+            Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -107,20 +109,15 @@ fun ProfessionalAuthScreen(
                 .padding(horizontal = 24.dp, vertical = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(color = AuthNavy, shape = RoundedCornerShape(26.dp), modifier = Modifier.size(88.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(if (isLogin) Icons.Default.Lock else Icons.Default.Person, null, tint = AuthOrange, modifier = Modifier.size(40.dp))
-                }
-            }
-            Spacer(Modifier.height(24.dp))
-            Text(if (isLogin) "Parent sign in" else "Create parent account", color = AuthNavy, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                if (isLogin) "Manage your family through Eduk Family Cloud." else "Your account creates the secure family space for child devices.",
-                color = AuthBody,
-                style = MaterialTheme.typography.bodyMedium
+            EdukGlowHero(
+                overline = if (isLogin) "Secure parent access" else "Your family command center",
+                title = if (isLogin) "Welcome back." else "Build your family space.",
+                description = if (isLogin) "Sign in to manage learning, protection, and each child’s connected phone." else "Your account is the private starting point for the child devices you control.",
+                icon = if (isLogin) Icons.Default.Lock else Icons.Default.Person
             )
-            Spacer(Modifier.height(30.dp))
+            Spacer(Modifier.height(18.dp))
+            EdukStepPill(if (isLogin) "Parent account" else "Step 1 · Parent account")
+            Spacer(Modifier.height(16.dp))
 
             if (!isLogin) {
                 OutlinedTextField(
@@ -184,6 +181,7 @@ fun ProfessionalAuthScreen(
                 Text(if (isLogin) "New to Eduk? Create an account" else "Already have an account? Sign in", color = AuthNavy, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(12.dp))
+            }
         }
     }
 }
