@@ -62,7 +62,14 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
         }
         isLoading = true
         scope.launch {
-            runCatching { EdukCloudRepository.getDashboard(token) }
+            runCatching {
+                val activeToken = if (sessionStore.shouldRefreshParentSession()) {
+                    runCatching { EdukCloudRepository.refreshParentSession(token) }
+                        .onSuccess { refreshed -> sessionStore.replaceParentToken(refreshed.token, refreshed.expiresAt) }
+                        .getOrNull()?.token ?: token
+                } else token
+                EdukCloudRepository.getDashboard(activeToken)
+            }
                 .onSuccess { response -> children = response.children; errorMessage = null }
                 .onFailure { errorMessage = "We could not refresh your family controls. Check your connection and try again." }
             isLoading = false

@@ -121,9 +121,14 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
         }
         scope.launch {
             runCatching {
-                val status = EdukCloudRepository.getStudentState(token)
-                val policy = EdukCloudRepository.getStudentPolicy(token)
-                val progress = EdukCloudRepository.getStudentLearningProgress(token)
+                val activeToken = if (sessionStore.shouldRefreshStudentSession()) {
+                    runCatching { EdukCloudRepository.refreshStudentSession(token) }
+                        .onSuccess { refreshed -> sessionStore.replaceStudentToken(refreshed.token, refreshed.expiresAt) }
+                        .getOrNull()?.token ?: token
+                } else token
+                val status = EdukCloudRepository.getStudentState(activeToken)
+                val policy = EdukCloudRepository.getStudentPolicy(activeToken)
+                val progress = EdukCloudRepository.getStudentLearningProgress(activeToken)
                 Triple(status, policy, progress)
             }.onSuccess { (response, policy, progress) ->
                     state = response

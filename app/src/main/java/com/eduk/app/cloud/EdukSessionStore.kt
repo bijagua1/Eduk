@@ -6,6 +6,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.time.Instant
 
 /**
  * Holds only signed session tokens and opaque family/device identifiers.
@@ -28,14 +29,21 @@ class EdukSessionStore(context: Context) {
         migrateLegacySessionOnce()
     }
 
-    fun saveParentSession(token: String, familyId: String) {
+    fun saveParentSession(token: String, familyId: String, expiresAt: String? = null) {
         preferences.edit()
             .putString(KEY_PARENT_TOKEN, token)
             .putString(KEY_FAMILY_ID, familyId)
+            .putString(KEY_PARENT_EXPIRES_AT, expiresAt)
             .apply()
     }
 
     fun parentToken(): String? = preferences.getString(KEY_PARENT_TOKEN, null)
+
+    fun replaceParentToken(token: String, expiresAt: String? = null) {
+        preferences.edit().putString(KEY_PARENT_TOKEN, token).putString(KEY_PARENT_EXPIRES_AT, expiresAt).apply()
+    }
+
+    fun shouldRefreshParentSession(withinMillis: Long = 10 * 60 * 1000L) = expiresSoon(KEY_PARENT_EXPIRES_AT, withinMillis)
 
     fun familyId(): String? = preferences.getString(KEY_FAMILY_ID, null)
 
@@ -43,17 +51,25 @@ class EdukSessionStore(context: Context) {
         preferences.edit()
             .remove(KEY_PARENT_TOKEN)
             .remove(KEY_FAMILY_ID)
+            .remove(KEY_PARENT_EXPIRES_AT)
             .apply()
     }
 
-    fun saveStudentSession(token: String, childId: String) {
+    fun saveStudentSession(token: String, childId: String, expiresAt: String? = null) {
         preferences.edit()
             .putString(KEY_STUDENT_TOKEN, token)
             .putString(KEY_CHILD_ID, childId)
+            .putString(KEY_STUDENT_EXPIRES_AT, expiresAt)
             .apply()
     }
 
     fun studentToken(): String? = preferences.getString(KEY_STUDENT_TOKEN, null)
+
+    fun replaceStudentToken(token: String, expiresAt: String? = null) {
+        preferences.edit().putString(KEY_STUDENT_TOKEN, token).putString(KEY_STUDENT_EXPIRES_AT, expiresAt).apply()
+    }
+
+    fun shouldRefreshStudentSession(withinMillis: Long = 24 * 60 * 60 * 1000L) = expiresSoon(KEY_STUDENT_EXPIRES_AT, withinMillis)
 
     fun studentChildId(): String? = preferences.getString(KEY_CHILD_ID, null)
 
@@ -61,6 +77,7 @@ class EdukSessionStore(context: Context) {
         preferences.edit()
             .remove(KEY_STUDENT_TOKEN)
             .remove(KEY_CHILD_ID)
+            .remove(KEY_STUDENT_EXPIRES_AT)
             .apply()
     }
 
@@ -85,13 +102,21 @@ class EdukSessionStore(context: Context) {
         legacyPreferences.edit().clear().apply()
     }
 
+    private fun expiresSoon(key: String, withinMillis: Long): Boolean {
+        val expiry = preferences.getString(key, null) ?: return false
+        val expiryMillis = runCatching { Instant.parse(expiry).toEpochMilli() }.getOrNull() ?: return false
+        return expiryMillis <= System.currentTimeMillis() + withinMillis
+    }
+
     companion object {
         private const val LEGACY_PREFERENCES_NAME = "eduk_cloud_session"
         private const val SECURE_PREFERENCES_NAME = "eduk_cloud_session_secure"
         private const val KEY_MIGRATION_COMPLETE = "secure_migration_complete"
         private const val KEY_PARENT_TOKEN = "parent_token"
         private const val KEY_FAMILY_ID = "family_id"
+        private const val KEY_PARENT_EXPIRES_AT = "parent_expires_at"
         private const val KEY_STUDENT_TOKEN = "student_token"
         private const val KEY_CHILD_ID = "child_id"
+        private const val KEY_STUDENT_EXPIRES_AT = "student_expires_at"
     }
 }

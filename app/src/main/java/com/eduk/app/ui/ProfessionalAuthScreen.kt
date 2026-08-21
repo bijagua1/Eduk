@@ -81,7 +81,7 @@ fun ProfessionalAuthScreen(
                     )
                 }
             }.onSuccess { session ->
-                sessionStore.saveParentSession(session.token, session.family.id)
+                sessionStore.saveParentSession(session.token, session.family.id, session.expiresAt)
                 onAuthSuccess()
             }.onFailure { error ->
                 val cloudError = error as? EdukCloudException

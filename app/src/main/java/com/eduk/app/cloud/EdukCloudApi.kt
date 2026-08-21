@@ -34,7 +34,8 @@ data class ParentRegisterRequest(
 
 data class ParentLoginRequest(val email: String, val password: String)
 data class ParentFamily(val id: String, val email: String, val displayName: String)
-data class ParentSessionResponse(val family: ParentFamily, val token: String)
+data class ParentSessionResponse(val family: ParentFamily, val token: String, val expiresAt: String? = null)
+data class TokenRefreshResponse(val token: String, val expiresAt: String? = null)
 
 data class CreateChildRequest(
     val displayName: String,
@@ -70,7 +71,7 @@ data class StudentPairRequest(
 )
 data class StudentLoginRequest(val username: String, val pin: String, val deviceId: String)
 data class StudentProfile(val id: String, val displayName: String, val username: String)
-data class StudentSessionResponse(val token: String, val child: StudentProfile)
+data class StudentSessionResponse(val token: String, val child: StudentProfile, val expiresAt: String? = null)
 data class StudentStateChild(
     val id: String,
     val displayName: String,
@@ -258,6 +259,9 @@ interface EdukCloudService {
     @POST("api/mobile/v1/parents/login")
     suspend fun loginParent(@Body request: ParentLoginRequest): Response<ParentSessionResponse>
 
+    @POST("api/mobile/v1/parents/refresh")
+    suspend fun refreshParentSession(@Header("Authorization") authorization: String): Response<TokenRefreshResponse>
+
     @GET("api/mobile/v1/parents/dashboard")
     suspend fun getDashboard(@Header("Authorization") authorization: String): Response<DashboardResponse>
 
@@ -278,6 +282,9 @@ interface EdukCloudService {
 
     @POST("api/mobile/v1/students/login")
     suspend fun loginStudent(@Body request: StudentLoginRequest): Response<StudentSessionResponse>
+
+    @POST("api/mobile/v1/students/refresh")
+    suspend fun refreshStudentSession(@Header("Authorization") authorization: String): Response<TokenRefreshResponse>
 
     @GET("api/mobile/v1/students/state")
     suspend fun getStudentState(@Header("Authorization") authorization: String): Response<StudentStateResponse>
@@ -404,11 +411,13 @@ object EdukCloudRepository {
 
     suspend fun registerParent(request: ParentRegisterRequest) = body(service.registerParent(request))
     suspend fun loginParent(request: ParentLoginRequest) = body(service.loginParent(request))
+    suspend fun refreshParentSession(parentToken: String) = body(service.refreshParentSession(bearer(parentToken)))
     suspend fun getDashboard(parentToken: String) = body(service.getDashboard(bearer(parentToken)))
     suspend fun createChild(parentToken: String, request: CreateChildRequest) = body(service.createChild(bearer(parentToken), request))
     suspend fun createPairingCode(parentToken: String, childId: String) = body(service.createPairingCode(bearer(parentToken), childId))
     suspend fun pairStudentDevice(request: StudentPairRequest) = body(service.pairStudentDevice(request))
     suspend fun loginStudent(request: StudentLoginRequest) = body(service.loginStudent(request))
+    suspend fun refreshStudentSession(studentToken: String) = body(service.refreshStudentSession(bearer(studentToken)))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
     suspend fun getStudentChallenge(studentToken: String) = body(service.getStudentChallenge(bearer(studentToken)))

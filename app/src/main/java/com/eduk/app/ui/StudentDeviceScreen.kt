@@ -66,7 +66,7 @@ fun StudentDeviceScreen(onReady: () -> Unit) {
                     )
                 }
             }.onSuccess { session ->
-                sessionStore.saveStudentSession(session.token, session.child.id)
+                sessionStore.saveStudentSession(session.token, session.child.id, session.expiresAt)
                 onReady()
             }.onFailure {
                 errorMessage = if (isPairing) {
