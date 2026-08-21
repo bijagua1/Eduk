@@ -1,5 +1,6 @@
 package com.eduk.app.ui
 
+import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -10,26 +11,31 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun FlowingControlBackdrop(pulse: Int, modifier: Modifier = Modifier) {
+    val motionEnabled = rememberEdukMotionEnabled()
     val transition = rememberInfiniteTransition(label = "eduk-flow")
-    val drift by transition.animateFloat(
+    val animatedDrift by transition.animateFloat(
         initialValue = -0.05f,
         targetValue = 1.05f,
         animationSpec = infiniteRepeatable(tween(11_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "eduk-flow-drift"
     )
-    val accent by transition.animateFloat(
+    val animatedAccent by transition.animateFloat(
         initialValue = 0.18f,
         targetValue = 0.43f,
         animationSpec = infiniteRepeatable(tween(2_200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "eduk-flow-accent"
     )
+    val drift = if (motionEnabled) animatedDrift else 0.5f
+    val accent = if (motionEnabled) animatedAccent else 0.18f
     Canvas(modifier = modifier.fillMaxSize()) {
         val pulseShift = (pulse % 7) * 18f
         fun flowPath(baseY: Float, amplitude: Float, shift: Float): Path = Path().apply {
@@ -60,5 +66,17 @@ fun FlowingControlBackdrop(pulse: Int, modifier: Modifier = Modifier) {
             color = Color(0xFF0B1F3A).copy(alpha = 0.05f + accent * 0.06f),
             style = Stroke(width = 1.8f)
         )
+    }
+}
+
+@Composable
+fun rememberEdukMotionEnabled(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) > 0f
     }
 }

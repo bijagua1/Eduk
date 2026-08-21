@@ -13,6 +13,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -72,9 +80,25 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EdukApp(startDestination: String) {
     val navController = rememberNavController()
+    val motionEnabled = rememberEdukMotionEnabled()
     var selectedCountry by remember { mutableStateOf("United States") }
     var selectedLanguage by remember { mutableStateOf("English") }
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        enterTransition = {
+            if (motionEnabled) slideInHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / 14 } + fadeIn(tween(180)) else EnterTransition.None
+        },
+        exitTransition = {
+            if (motionEnabled) slideOutHorizontally(tween(180, easing = FastOutSlowInEasing)) { -it / 20 } + fadeOut(tween(140)) else ExitTransition.None
+        },
+        popEnterTransition = {
+            if (motionEnabled) slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { -it / 18 } + fadeIn(tween(160)) else EnterTransition.None
+        },
+        popExitTransition = {
+            if (motionEnabled) slideOutHorizontally(tween(160, easing = FastOutSlowInEasing)) { it / 24 } + fadeOut(tween(120)) else ExitTransition.None
+        }
+    ) {
         composable("localization") {
             LocalizationSelectionScreen(onComplete = { country, language ->
                 selectedCountry = country
@@ -136,6 +160,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     var isContinuousLocationSharingActive by remember { mutableStateOf(sessionStore.isLocationSharingActive()) }
     var locationStatus by remember { mutableStateOf<String?>(null) }
     var showLocationConsentDialog by remember { mutableStateOf(false) }
+    var motionPulse by remember { mutableStateOf(0) }
     val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     fun shareCurrentLocation() {
@@ -232,7 +257,9 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     LaunchedEffect(Unit) { refresh() }
 
     Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
-        Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = motionPulse)
+            Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -366,7 +393,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                         Spacer(Modifier.height(6.dp))
                         Text("Scan the book you are studying. After a parent approves the questions, verified answers earn the time your parent configured.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(18.dp))
-                        Button(onClick = onOpenScanner, modifier = Modifier.fillMaxWidth().height(58.dp), colors = ButtonDefaults.buttonColors(containerColor = HomeOrange), shape = RoundedCornerShape(17.dp)) {
+                        Button(onClick = { motionPulse += 1; onOpenScanner() }, modifier = Modifier.fillMaxWidth().height(58.dp), colors = ButtonDefaults.buttonColors(containerColor = HomeOrange), shape = RoundedCornerShape(17.dp)) {
                             Icon(Icons.Default.CameraAlt, null)
                             Spacer(Modifier.width(10.dp))
                             Text("Scan book & earn time", fontWeight = FontWeight.ExtraBold)
@@ -384,6 +411,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     OutlinedButton(onClick = ::refresh) { Text("Try again") }
                 }
                 Spacer(Modifier.height(88.dp))
+            }
             }
         }
     }

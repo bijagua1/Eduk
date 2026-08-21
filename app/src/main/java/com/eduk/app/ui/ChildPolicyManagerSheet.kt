@@ -54,6 +54,7 @@ fun ChildPolicyManagerSheet(
     var subjectsText by remember { mutableStateOf("") }
     var selectedDifficulty by remember { mutableStateOf("adaptive") }
     var learningGoals by remember { mutableStateOf("") }
+    var motionPulse by remember { mutableStateOf(0) }
 
     val inputColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = RulesInk,
@@ -204,7 +205,9 @@ fun ChildPolicyManagerSheet(
             color = RulesCanvas,
             shape = RoundedCornerShape(30.dp)
         ) {
-            Column(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize()) {
+                FlowingControlBackdrop(pulse = motionPulse)
+                Column(Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -256,7 +259,7 @@ fun ChildPolicyManagerSheet(
                         } else {
                             items(visibleApps, key = { it.id }) { app ->
                                 val rule = current.appRules.firstOrNull { it.packageName == app.packageName }
-                                InstalledAppCard(app = app, rule = rule, onConfigure = { selectedApp = app })
+                                InstalledAppCard(app = app, rule = rule, onConfigure = { motionPulse += 1; selectedApp = app })
                             }
                         }
                         if (current.appRules.isNotEmpty()) {
@@ -343,6 +346,7 @@ fun ChildPolicyManagerSheet(
                             }
                         }
                     }
+                }
                 }
             }
         }
