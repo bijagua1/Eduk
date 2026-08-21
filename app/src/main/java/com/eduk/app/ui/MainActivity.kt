@@ -35,6 +35,7 @@ import com.eduk.app.cloud.LearningProgressResponse
 import com.eduk.app.cloud.StudentLocationReportRequest
 import com.eduk.app.cloud.StudentStateResponse
 import com.eduk.app.service.AppMonitoringService
+import com.eduk.app.service.ConsentedLocationService
 import com.eduk.app.ui.theme.EdukTheme
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
@@ -120,7 +121,9 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     var learningProgress by remember { mutableStateOf<LearningProgressResponse?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLocationSharingEnabled by remember { mutableStateOf(false) }
+    var isContinuousLocationSharingActive by remember { mutableStateOf(sessionStore.isLocationSharingActive()) }
     var locationStatus by remember { mutableStateOf<String?>(null) }
+    var showLocationConsentDialog by remember { mutableStateOf(false) }
     val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     fun shareCurrentLocation() {
@@ -159,7 +162,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) shareCurrentLocation()
+        if (granted) showLocationConsentDialog = true
         else locationStatus = "Location permission was not granted. You can enable it later in Android settings."
     }
 
@@ -186,6 +189,11 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     state = response
                     learningProgress = progress
                     isLocationSharingEnabled = locationSettings.isSharingEnabled
+                    if (!locationSettings.isSharingEnabled && sessionStore.isLocationSharingActive()) {
+                        sessionStore.setLocationSharingActive(false)
+                        ConsentedLocationService.stop(context)
+                    }
+                    isContinuousLocationSharingActive = locationSettings.isSharingEnabled && sessionStore.isLocationSharingActive()
                     AppMonitoringService.applyRemotePolicy(context, policy)
                 }
                 .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
@@ -238,7 +246,11 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                         Column(Modifier.padding(20.dp)) {
                             Text("Family location sharing", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
                             Spacer(Modifier.height(6.dp))
-                            Text("Your parent enabled location sharing for this paired device. Eduk shares your position only when you choose the button below.", color = Color(0xFF4F6078), style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                if (isContinuousLocationSharingActive) "Sharing is active. A visible Android notification remains on while Eduk sends periodic updates to your family."
+                                else "Your parent enabled location sharing for this paired device. You decide when to start sharing, and can stop at any time.",
+                                color = Color(0xFF4F6078), style = MaterialTheme.typography.bodySmall
+                            )
                             locationStatus?.let {
                                 Spacer(Modifier.height(10.dp))
                                 Text(it, color = HomeNavy, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
@@ -248,7 +260,12 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                                 onClick = {
                                     val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                                         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                                    if (hasLocationPermission) shareCurrentLocation()
+                                    if (isContinuousLocationSharingActive) {
+                                        sessionStore.setLocationSharingActive(false)
+                                        isContinuousLocationSharingActive = false
+                                        ConsentedLocationService.stop(context)
+                                        locationStatus = "Location sharing is off on this device."
+                                    } else if (hasLocationPermission) showLocationConsentDialog = true
                                     else locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -256,7 +273,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                             ) {
                                 Icon(Icons.Default.Security, null, tint = HomeNavy)
                                 Spacer(Modifier.width(9.dp))
-                                Text("Share current location", color = HomeNavy, fontWeight = FontWeight.Bold)
+                                Text(if (isContinuousLocationSharingActive) "Stop location sharing" else "Start location sharing", color = HomeNavy, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -288,6 +305,23 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 Spacer(Modifier.height(88.dp))
             }
         }
+    }
+    if (showLocationConsentDialog) {
+        AlertDialog(
+            onDismissRequest = { showLocationConsentDialog = false },
+            title = { Text("Share location with your family?") },
+            text = { Text("Eduk will show a visible Android notification while it periodically shares this device’s location with your parent. You can stop sharing here at any time.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    sessionStore.setLocationSharingActive(true)
+                    isContinuousLocationSharingActive = true
+                    showLocationConsentDialog = false
+                    ConsentedLocationService.start(context)
+                    shareCurrentLocation()
+                }) { Text("Start sharing") }
+            },
+            dismissButton = { TextButton(onClick = { showLocationConsentDialog = false }) { Text("Not now") } }
+        )
     }
 }
 

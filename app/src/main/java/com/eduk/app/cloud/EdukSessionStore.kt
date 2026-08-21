@@ -73,11 +73,18 @@ class EdukSessionStore(context: Context) {
 
     fun studentChildId(): String? = preferences.getString(KEY_CHILD_ID, null)
 
+    fun isLocationSharingActive(): Boolean = preferences.getBoolean(KEY_LOCATION_SHARING_ACTIVE, false)
+
+    fun setLocationSharingActive(isActive: Boolean) {
+        preferences.edit().putBoolean(KEY_LOCATION_SHARING_ACTIVE, isActive).apply()
+    }
+
     fun clearStudentSession() {
         preferences.edit()
             .remove(KEY_STUDENT_TOKEN)
             .remove(KEY_CHILD_ID)
             .remove(KEY_STUDENT_EXPIRES_AT)
+            .remove(KEY_LOCATION_SHARING_ACTIVE)
             .apply()
     }
 
@@ -118,5 +125,6 @@ class EdukSessionStore(context: Context) {
         private const val KEY_STUDENT_TOKEN = "student_token"
         private const val KEY_CHILD_ID = "child_id"
         private const val KEY_STUDENT_EXPIRES_AT = "student_expires_at"
+        private const val KEY_LOCATION_SHARING_ACTIVE = "location_sharing_active"
     }
 }
