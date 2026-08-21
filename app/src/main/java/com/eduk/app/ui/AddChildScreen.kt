@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eduk.app.cloud.CreateChildRequest
 import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.EdukCloudException
 import com.eduk.app.cloud.EdukSessionStore
 import com.eduk.app.cloud.PairingCodeResponse
 import kotlinx.coroutines.launch
@@ -84,8 +85,14 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 EdukCloudRepository.createPairingCode(parentToken, child.id)
             }.onSuccess { code ->
                 pairingCode = code
-            }.onFailure {
-                errorMessage = "We could not create this child account. Check the username, PIN, and connection, then try again."
+            }.onFailure { error ->
+                errorMessage = when ((error as? EdukCloudException)?.errorCode) {
+                    "USERNAME_TAKEN" -> "That student username is already in use. Choose a different username, such as ${username.trim().lowercase()}-1."
+                    "CHILD_LIMIT_REACHED" -> error.message
+                    "UNAUTHENTICATED", "SESSION_EXPIRED" -> "Your parent session has expired. Please sign in again."
+                    "VALIDATION_ERROR" -> "Check the child name, username, 4–8 digit PIN, grade, and daily limit, then try again."
+                    else -> "We could not create this child account right now. Check your connection and try again."
+                }
             }
             isSaving = false
         }
