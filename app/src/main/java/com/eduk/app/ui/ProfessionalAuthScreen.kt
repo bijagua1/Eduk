@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.EdukCloudException
 import com.eduk.app.cloud.EdukSessionStore
 import com.eduk.app.cloud.ParentLoginRequest
 import com.eduk.app.cloud.ParentRegisterRequest
@@ -82,8 +83,15 @@ fun ProfessionalAuthScreen(
             }.onSuccess { session ->
                 sessionStore.saveParentSession(session.token, session.family.id)
                 onAuthSuccess()
-            }.onFailure {
-                errorMessage = if (isLogin) "The email or password is incorrect, or Eduk Family Cloud is unavailable." else "We could not create the parent account. This email may already be registered."
+            }.onFailure { error ->
+                val cloudError = error as? EdukCloudException
+                errorMessage = when {
+                    cloudError?.errorCode == "PARENT_EXISTS" -> "An Eduk parent account already exists for this email. Choose Sign in instead."
+                    cloudError?.errorCode == "INVALID_REQUEST" -> "Please enter a valid email, a name, and a password with at least 8 characters."
+                    cloudError?.errorCode == "DATABASE_UNAVAILABLE" -> "Eduk Family Cloud is temporarily unavailable. Please try again in a moment."
+                    cloudError != null -> cloudError.message
+                    else -> "We could not reach Eduk Family Cloud. Check your connection and try again."
+                }
             }
             isSubmitting = false
         }

@@ -10,9 +10,18 @@ import retrofit2.http.POST
 import retrofit2.http.PATCH
 import retrofit2.http.Path
 
+data class EdukCloudErrorBody(val error: EdukCloudError? = null)
+data class EdukCloudError(val code: String, val message: String)
+
+class EdukCloudException(
+    val statusCode: Int,
+    val errorCode: String?,
+    override val message: String
+) : IllegalStateException(message)
+
 object EdukCloudConfig {
-    // This becomes Eduk Family Cloud's permanent public address when the backend project is published.
-    const val BASE_URL = "https://eduk-family-cloud.manus.space/"
+    // Verified HTTPS endpoint for the current Eduk Family Cloud instance.
+    const val BASE_URL = "https://3000-i9ngt61dg0xvs3rgnu1x1-2fc2b4ae.us4.manus.computer/"
 }
 
 data class ParentRegisterRequest(
@@ -158,7 +167,15 @@ object EdukCloudRepository {
 
     private suspend fun <T> body(response: Response<T>): T {
         if (response.isSuccessful && response.body() != null) return response.body()!!
-        throw IllegalStateException(response.errorBody()?.string() ?: "Eduk Family Cloud request failed.")
+        val rawError = response.errorBody()?.string().orEmpty()
+        val parsed = runCatching {
+            com.google.gson.Gson().fromJson(rawError, EdukCloudErrorBody::class.java)
+        }.getOrNull()?.error
+        throw EdukCloudException(
+            statusCode = response.code(),
+            errorCode = parsed?.code,
+            message = parsed?.message ?: "Eduk Family Cloud returned an unexpected error."
+        )
     }
 
     suspend fun registerParent(request: ParentRegisterRequest) = body(service.registerParent(request))
