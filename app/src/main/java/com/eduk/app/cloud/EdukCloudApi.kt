@@ -136,6 +136,30 @@ data class StudentPolicyResponse(
     val schedules: List<CloudSchedule>,
     val rewardRules: List<CloudRewardRule>
 )
+data class StudyMaterialRequest(
+    val sourceType: String,
+    val displayName: String,
+    val subject: String? = null,
+    val imageBase64: String? = null,
+    val imageMimeType: String? = null,
+    val extractedText: String? = null,
+    val questionCount: Int = 5
+)
+data class GeneratedCloudQuestion(
+    val id: String,
+    val questionText: String,
+    val choicesJson: String?,
+    val subject: String,
+    val topic: String,
+    val difficulty: Int,
+    val reviewStatus: String,
+    val validationStatus: String
+)
+data class StudyMaterialResponse(
+    val sourceId: String,
+    val processingStatus: String,
+    val questions: List<GeneratedCloudQuestion>
+)
 
 interface EdukCloudService {
     @POST("api/mobile/v1/parents/register")
@@ -170,6 +194,13 @@ interface EdukCloudService {
 
     @GET("api/mobile/v1/students/policy")
     suspend fun getStudentPolicy(@Header("Authorization") authorization: String): Response<StudentPolicyResponse>
+
+    @POST("api/mobile/v1/children/{childId}/study-materials")
+    suspend fun submitStudyMaterial(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: StudyMaterialRequest
+    ): Response<StudyMaterialResponse>
 
     @PATCH("api/mobile/v1/children/{childId}/time")
     suspend fun updateTime(
@@ -231,6 +262,8 @@ object EdukCloudRepository {
     suspend fun loginStudent(request: StudentLoginRequest) = body(service.loginStudent(request))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
+    suspend fun submitStudyMaterial(studentToken: String, childId: String, request: StudyMaterialRequest) =
+        body(service.submitStudyMaterial(bearer(studentToken), childId, request))
     suspend fun updateTime(parentToken: String, childId: String, deltaMinutes: Int) = body(service.updateTime(bearer(parentToken), childId, TimeAdjustmentRequest(deltaMinutes)))
     suspend fun updateBlocking(parentToken: String, childId: String, isBlockingEnabled: Boolean) = body(service.updateBlocking(bearer(parentToken), childId, BlockingRequest(isBlockingEnabled)))
     suspend fun getLearningHistory(parentToken: String, childId: String) = body(service.getLearningHistory(bearer(parentToken), childId))
