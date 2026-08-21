@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AddChildScreen(onChildAdded: () -> Unit) {
-    val context = LocalContext.applicationContext
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
     var name by remember { mutableStateOf("") }
