@@ -326,6 +326,24 @@ data class CloudSafePlace(
     val isEnabled: Boolean
 )
 data class SafePlaceListResponse(val places: List<CloudSafePlace>)
+data class CloudLocationReport(
+    val latitude: String,
+    val longitude: String,
+    val accuracyMeters: Int,
+    val batteryPercent: Int? = null,
+    val reportedAt: String
+)
+data class CloudSafePlaceAlert(
+    val safePlaceId: String,
+    val eventType: String,
+    val occurredAt: String
+)
+data class ParentLocationResponse(
+    val settings: LocationSettingsResponse,
+    val lastKnownLocation: CloudLocationReport? = null,
+    val places: List<CloudSafePlace> = emptyList(),
+    val alerts: List<CloudSafePlaceAlert> = emptyList()
+)
 data class StudentLocationReportRequest(
     val latitude: Double,
     val longitude: Double,
@@ -458,6 +476,12 @@ interface EdukCloudService {
         @Path("childId") childId: String,
         @Body request: LocationSettingsRequest
     ): Response<LocationSettingsResponse>
+
+    @GET("api/mobile/v1/children/{childId}/location")
+    suspend fun getChildLocation(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<ParentLocationResponse>
 
     @GET("api/mobile/v1/children/{childId}/safe-places")
     suspend fun getSafePlaces(
@@ -609,6 +633,7 @@ object EdukCloudRepository {
     suspend fun saveLearningPreferences(parentToken: String, childId: String, request: LearningPreferencesRequest) =
         body(service.saveLearningPreferences(bearer(parentToken), childId, request))
     suspend fun getLocationSettings(parentToken: String, childId: String) = body(service.getLocationSettings(bearer(parentToken), childId))
+    suspend fun getChildLocation(parentToken: String, childId: String) = body(service.getChildLocation(bearer(parentToken), childId))
     suspend fun saveLocationSettings(parentToken: String, childId: String, request: LocationSettingsRequest) =
         body(service.saveLocationSettings(bearer(parentToken), childId, request))
     suspend fun getSafePlaces(parentToken: String, childId: String) = body(service.getSafePlaces(bearer(parentToken), childId))

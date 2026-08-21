@@ -64,13 +64,33 @@ private val HomeNavy = Color(0xFF0B1F3A)
 private val HomeOrange = Color(0xFFFF7A1A)
 
 class MainActivity : ComponentActivity() {
+    private var questionRequestNonce = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val triggerQuestion = intent.getBooleanExtra("TRIGGER_QUESTION", false)
+        if (intent.getBooleanExtra("TRIGGER_QUESTION", false)) questionRequestNonce += 1
         setContent {
             EdukTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    EdukApp(startDestination = if (triggerQuestion) "question" else "localization")
+                    EdukApp(
+                        startDestination = if (questionRequestNonce > 0) "question" else "localization",
+                        questionRequestNonce = questionRequestNonce
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra("TRIGGER_QUESTION", false)) {
+            questionRequestNonce += 1
+            setContent {
+                EdukTheme {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        EdukApp(startDestination = "localization", questionRequestNonce = questionRequestNonce)
+                    }
                 }
             }
         }
@@ -78,11 +98,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EdukApp(startDestination: String) {
+fun EdukApp(startDestination: String, questionRequestNonce: Int = 0) {
     val navController = rememberNavController()
     val motionEnabled = rememberEdukMotionEnabled()
     var selectedCountry by remember { mutableStateOf("United States") }
     var selectedLanguage by remember { mutableStateOf("English") }
+    LaunchedEffect(questionRequestNonce) {
+        if (questionRequestNonce > 0) {
+            navController.navigate("question") { launchSingleTop = true }
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = startDestination,

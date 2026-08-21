@@ -3,6 +3,7 @@ package com.eduk.app.ui
 import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -36,8 +37,13 @@ fun FlowingControlBackdrop(pulse: Int, modifier: Modifier = Modifier) {
     )
     val drift = if (motionEnabled) animatedDrift else 0.5f
     val accent = if (motionEnabled) animatedAccent else 0.18f
+    val animatedPulse by animateFloatAsState(
+        targetValue = pulse.toFloat(),
+        animationSpec = tween(if (motionEnabled) 620 else 0, easing = FastOutSlowInEasing),
+        label = "eduk-flow-pulse"
+    )
     Canvas(modifier = modifier.fillMaxSize()) {
-        val pulseShift = (pulse % 7) * 18f
+        val pulseShift = (animatedPulse % 7f) * 30f
         fun flowPath(baseY: Float, amplitude: Float, shift: Float): Path = Path().apply {
             moveTo(-size.width * 0.15f, baseY)
             cubicTo(
@@ -53,18 +59,18 @@ fun FlowingControlBackdrop(pulse: Int, modifier: Modifier = Modifier) {
         }
         drawPath(
             flowPath(size.height * (0.13f + drift * 0.06f), size.width * 0.18f, pulseShift),
-            color = Color(0xFF2E6CB8).copy(alpha = 0.06f + accent * 0.08f),
-            style = Stroke(width = 2.2f)
+            color = Color(0xFF2E6CB8).copy(alpha = 0.14f + accent * 0.15f),
+            style = Stroke(width = 5.2f)
         )
         drawPath(
             flowPath(size.height * (0.46f - drift * 0.05f), size.width * 0.24f, -pulseShift),
-            color = Color(0xFFFF7A1A).copy(alpha = 0.07f + accent * 0.09f),
-            style = Stroke(width = 2.6f)
+            color = Color(0xFFFF7A1A).copy(alpha = 0.16f + accent * 0.16f),
+            style = Stroke(width = 5.8f)
         )
         drawPath(
             flowPath(size.height * (0.82f + drift * 0.03f), size.width * 0.14f, pulseShift * 0.4f),
-            color = Color(0xFF0B1F3A).copy(alpha = 0.05f + accent * 0.06f),
-            style = Stroke(width = 1.8f)
+            color = Color(0xFF7450C8).copy(alpha = 0.11f + accent * 0.13f),
+            style = Stroke(width = 4.5f)
         )
     }
 }

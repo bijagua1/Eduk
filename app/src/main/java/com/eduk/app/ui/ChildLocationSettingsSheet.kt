@@ -1,5 +1,7 @@
 package com.eduk.app.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,6 +45,7 @@ import com.eduk.app.cloud.CloudChild
 import com.eduk.app.cloud.CloudSafePlace
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.LocationSettingsRequest
+import com.eduk.app.cloud.ParentLocationResponse
 import com.eduk.app.cloud.SafePlaceRequest
 import kotlinx.coroutines.launch
 
@@ -52,6 +56,7 @@ private val LocationMuted = Color(0xFF62738A)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isSharingEnabled by remember { mutableStateOf(false) }
     var retentionDays by remember { mutableStateOf(7) }
@@ -64,6 +69,7 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
     var longitudeText by remember { mutableStateOf("") }
     var radiusText by remember { mutableStateOf("150") }
     var savingPlace by remember { mutableStateOf(false) }
+    var locationState by remember { mutableStateOf<ParentLocationResponse?>(null) }
 
     fun load() {
         if (parentToken == null) {
@@ -73,13 +79,12 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
         }
         loading = true
         scope.launch {
-            runCatching {
-                EdukCloudRepository.getLocationSettings(parentToken, child.id) to
-                    EdukCloudRepository.getSafePlaces(parentToken, child.id)
-            }.onSuccess { (settings, places) ->
-                    isSharingEnabled = settings.isSharingEnabled
-                    retentionDays = settings.retentionDays
-                    safePlaces = places.places
+            runCatching { EdukCloudRepository.getChildLocation(parentToken, child.id) }
+                .onSuccess { response ->
+                    locationState = response
+                    isSharingEnabled = response.settings.isSharingEnabled
+                    retentionDays = response.settings.retentionDays
+                    safePlaces = response.places
                     message = null
                 }
                 .onFailure { message = "We could not load location privacy settings." }
@@ -174,6 +179,49 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
                     }
                 }
                 item {
+                    val report = locationState?.lastKnownLocation
+                    Surface(
+                        color = if (isSharingEnabled) Color(0xFFEAF3FF) else Color(0xFFF4F6FA),
+                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(18.dp)) {
+                            Text("Live family location", color = LocationNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Spacer(Modifier.height(5.dp))
+                            when {
+                                !isSharingEnabled -> Text("Location sharing is off. Turn it on here, then the student must visibly start sharing on their device.", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                                report == null -> Text("Waiting for the child device to share its first location. The student controls this from Student Mode and Android keeps a visible sharing notification while it is active.", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                                else -> {
+                                    Text("Last report · ${displayLocationTime(report.reportedAt)}", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                                    Spacer(Modifier.height(10.dp))
+                                    Text("${report.latitude}, ${report.longitude}", color = LocationNavy, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.ExtraBold)
+                                    Text("Accuracy ${report.accuracyMeters} m${report.batteryPercent?.let { " · Battery $it%" }.orEmpty()}", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                                    Spacer(Modifier.height(12.dp))
+                                    OutlinedButton(
+                                        onClick = {
+                                            val mapUri = Uri.parse("geo:0,0?q=${report.latitude},${report.longitude}(${child.displayName})")
+                                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, mapUri)) }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) { Text("Open latest location in Maps", color = LocationNavy, fontWeight = FontWeight.Bold) }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (locationState?.alerts?.isNotEmpty() == true) item {
+                    Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Recent safe-place alerts", color = LocationNavy, fontWeight = FontWeight.ExtraBold)
+                            locationState?.alerts?.take(3)?.forEach { alert ->
+                                Spacer(Modifier.height(8.dp))
+                                Text("${if (alert.eventType == "entered") "Arrived" else "Left"} a safe place · ${displayLocationTime(alert.occurredAt)}", color = LocationMuted, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+                item {
                     Text("Retention period", color = LocationNavy, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -248,3 +296,8 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
         }
     }
 }
+
+private fun displayLocationTime(timestamp: String): String = timestamp
+    .replace("T", " ")
+    .replace("Z", " UTC")
+    .take(21)

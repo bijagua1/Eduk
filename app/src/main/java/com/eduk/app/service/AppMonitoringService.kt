@@ -7,8 +7,16 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.EdukSessionStore
 import com.eduk.app.cloud.StudentPolicyResponse
 import com.eduk.app.ui.MainActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AppMonitoringService : AccessibilityService() {
 
@@ -33,12 +41,24 @@ class AppMonitoringService : AccessibilityService() {
 
     private lateinit var policyStore: ChildPolicyStore
     private val handler = Handler(Looper.getMainLooper())
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var refreshInFlight = false
+    private var lastPolicyRefreshAt = 0L
+    private var lastGateLaunchAt = 0L
+    private val policyRefreshRunnable = object : Runnable {
+        override fun run() {
+            refreshRemotePolicy(force = true)
+            handler.postDelayed(this, POLICY_REFRESH_INTERVAL_MILLIS)
+        }
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         policyStore = ChildPolicyStore(this)
         instance = this
         Log.d("EdukMonitor", "Service connected with persisted child policy")
+        refreshRemotePolicy(force = true)
+        handler.post(policyRefreshRunnable)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -46,9 +66,40 @@ class AppMonitoringService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         if (policyStore.currentForegroundPackage() != packageName) {
             policyStore.beginForeground(packageName)
-            scheduleGateCheck(packageName)
         }
+        refreshRemotePolicy()
+        evaluateForeground(packageName)
+    }
+
+    private fun evaluateForeground(packageName: String) {
         if (policyStore.shouldGate(packageName)) checkAccess(packageName)
+        else scheduleGateCheck(packageName)
+    }
+
+    private fun refreshRemotePolicy(force: Boolean = false) {
+        if (!::policyStore.isInitialized || refreshInFlight) return
+        val now = System.currentTimeMillis()
+        if (!force && now - lastPolicyRefreshAt < POLICY_REFRESH_INTERVAL_MILLIS) return
+        val sessionStore = EdukSessionStore(this)
+        val storedToken = sessionStore.studentToken() ?: return
+        refreshInFlight = true
+        lastPolicyRefreshAt = now
+        serviceScope.launch {
+            val activeToken = if (sessionStore.shouldRefreshStudentSession()) {
+                runCatching { EdukCloudRepository.refreshStudentSession(storedToken) }
+                    .onSuccess { sessionStore.replaceStudentToken(it.token, it.expiresAt) }
+                    .getOrNull()?.token ?: storedToken
+            } else storedToken
+            runCatching { EdukCloudRepository.getStudentPolicy(activeToken) }
+                .onSuccess { policy ->
+                    policyStore.save(policy)
+                    withContext(Dispatchers.Main) {
+                        policyStore.currentForegroundPackage()?.let(::evaluateForeground)
+                    }
+                }
+                .onFailure { Log.w("EdukMonitor", "Remote policy refresh failed; using last authorized policy") }
+            refreshInFlight = false
+        }
     }
 
     private fun scheduleGateCheck(packageName: String) {
@@ -63,6 +114,9 @@ class AppMonitoringService : AccessibilityService() {
 
     private fun checkAccess(packageName: String) {
         if (policyStore.isAccessCurrentlyEarned()) return
+        val now = System.currentTimeMillis()
+        if (now - lastGateLaunchAt < 1_500L) return
+        lastGateLaunchAt = now
         Log.d("EdukMonitor", "Learning gate active for $packageName")
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -87,8 +141,7 @@ class AppMonitoringService : AccessibilityService() {
     private fun reloadPolicy() {
         if (!::policyStore.isInitialized) return
         policyStore.currentForegroundPackage()?.let { packageName ->
-            if (policyStore.shouldGate(packageName)) checkAccess(packageName)
-            else scheduleGateCheck(packageName)
+            evaluateForeground(packageName)
         }
     }
 
@@ -99,6 +152,11 @@ class AppMonitoringService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
+        serviceScope.cancel()
         instance = null
+    }
+
+    private companion object {
+        const val POLICY_REFRESH_INTERVAL_MILLIS = 15_000L
     }
 }

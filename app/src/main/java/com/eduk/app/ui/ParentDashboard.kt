@@ -150,13 +150,12 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Surface(color = DashboardNavy, shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(24.dp)) {
-                        Text("Your family, clearly in control.", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
-                        Spacer(Modifier.height(8.dp))
-                        Text("Create a child account, pair their phone, and manage learning-based screen time from one secure place.", color = Color.White.copy(alpha = 0.72f), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
+                EdukGlowHero(
+                    overline = "Eduk family command",
+                    title = "Your family. Clearly in control.",
+                    description = "See each connected child device, set real app rules, track consented location, and turn learning into earned time.",
+                    icon = Icons.Default.Security
+                )
             }
 
             errorMessage?.let { message ->
@@ -199,7 +198,11 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     }
                 }
                 else -> items(children, key = { it.id }) { child ->
-                    ChildControlCard(child = child, onOpen = { motionPulse += 1; selectedChild = child })
+                    ChildControlCard(
+                        child = child,
+                        onOpen = { motionPulse += 1; selectedChild = child },
+                        onLocation = { motionPulse += 1; locationChild = child }
+                    )
                 }
             }
             }
@@ -378,9 +381,8 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
 }
 
 @Composable
-private fun ChildControlCard(child: CloudChild, onOpen: () -> Unit) {
+private fun ChildControlCard(child: CloudChild, onOpen: () -> Unit, onLocation: () -> Unit) {
     Surface(
-        onClick = onOpen,
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
         shape = RoundedCornerShape(26.dp),
@@ -412,6 +414,24 @@ private fun ChildControlCard(child: CloudChild, onOpen: () -> Unit) {
                     Icon(Icons.Default.PhoneAndroid, null, tint = DashboardOrange, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.width(7.dp))
                     Text(child.linkedDeviceLabel, color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onOpen,
+                    modifier = Modifier.weight(1.1f),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = DashboardNavy)
+                ) {
+                    Icon(Icons.Default.Lock, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text("Control", fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(onClick = onLocation, modifier = Modifier.weight(0.9f), shape = RoundedCornerShape(15.dp)) {
+                    Icon(Icons.Default.Security, null, tint = DashboardOrange, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text("Location", color = DashboardNavy, fontWeight = FontWeight.Bold)
                 }
             }
         }
