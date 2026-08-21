@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.eduk.app.cloud.CloudChild
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.EdukSessionStore
@@ -57,6 +59,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
     var reviewChild by remember { mutableStateOf<CloudChild?>(null) }
     var analyticsChild by remember { mutableStateOf<CloudChild?>(null) }
     var locationChild by remember { mutableStateOf<CloudChild?>(null) }
+    var motionPulse by remember { mutableStateOf(0) }
 
     fun refreshDashboard() {
         val token = sessionStore.parentToken()
@@ -139,7 +142,9 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             )
         }
     ) { padding ->
-        LazyColumn(
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = motionPulse)
+            LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -194,94 +199,107 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     }
                 }
                 else -> items(children, key = { it.id }) { child ->
-                    ChildControlCard(child = child, onOpen = { selectedChild = child })
+                    ChildControlCard(child = child, onOpen = { motionPulse += 1; selectedChild = child })
                 }
+            }
             }
         }
     }
 
     selectedChild?.let { child ->
-        ModalBottomSheet(
+        Dialog(
             onDismissRequest = { selectedChild = null },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 36.dp)) {
-                Text(child.displayName, color = DashboardNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
-                Text("@${child.username} · Grade ${child.gradeLevel}", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(24.dp))
-                Text("Screen time", color = DashboardInk, fontWeight = FontWeight.ExtraBold)
-                Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = { adjustTime(child, -10) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("− 10 min") }
-                    Button(onClick = { adjustTime(child, 10) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = DashboardOrange), shape = RoundedCornerShape(16.dp)) { Text("+ 10 min") }
-                }
-                Spacer(Modifier.height(22.dp))
-                Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Security, null, tint = DashboardNavy)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("App blocking", color = DashboardInk, fontWeight = FontWeight.Bold)
-                            Text(if (child.isBlockingEnabled) "Protected apps lock when time runs out." else "App blocking is currently paused.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall)
+            Surface(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                color = DashboardCanvas,
+                shape = RoundedCornerShape(30.dp)
+            ) {
+                LazyColumn(
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(child.displayName, color = DashboardNavy, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+                                Text("@${child.username} · Grade ${child.gradeLevel}", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
+                            }
+                            TextButton(onClick = { selectedChild = null }) { Text("Close", color = DashboardOrange, fontWeight = FontWeight.Bold) }
                         }
-                        Switch(checked = child.isBlockingEnabled, onCheckedChange = { toggleBlocking(child, it) })
+                    }
+                    item {
+                        Surface(color = DashboardNavy, shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(20.dp)) {
+                                Text("Control center", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                                Spacer(Modifier.height(5.dp))
+                                Text("Set app rules, daily time, learning rewards, privacy, and device access from one place.", color = Color.White.copy(alpha = .76f), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                    item {
+                        Text("Screen time ready", color = DashboardInk, fontWeight = FontWeight.ExtraBold)
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = { adjustTime(child, -10) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("− 10 min") }
+                            Button(onClick = { adjustTime(child, 10) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = DashboardOrange), shape = RoundedCornerShape(16.dp)) { Text("+ 10 min") }
+                        }
+                    }
+                    item {
+                        Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Security, null, tint = DashboardNavy)
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Protection engine", color = DashboardInk, fontWeight = FontWeight.Bold)
+                                    Text(if (child.isBlockingEnabled) "On · Eduk can apply the app rules below." else "Paused · Turn this on before expecting a block.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall)
+                                }
+                                Switch(checked = child.isBlockingEnabled, onCheckedChange = { toggleBlocking(child, it) })
+                            }
+                        }
+                    }
+                    item {
+                        Button(
+                            onClick = { selectedChild = null; controlsChild = child },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = DashboardNavy),
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Icon(Icons.Default.Lock, null)
+                            Spacer(Modifier.width(10.dp))
+                            Text("Manage apps, limits & learning rules", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    item { Text("More family controls", color = DashboardInk, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp)) }
+                    item {
+                        OutlinedButton(onClick = { selectedChild = null; reviewChild = child }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                            Icon(Icons.Default.School, null, tint = DashboardOrange); Spacer(Modifier.width(10.dp)); Text("Review AI-generated questions", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    item {
+                        OutlinedButton(onClick = { selectedChild = null; analyticsChild = child }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                            Icon(Icons.Default.Timer, null, tint = DashboardOrange); Spacer(Modifier.width(10.dp)); Text("View learning progress", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    item {
+                        OutlinedButton(onClick = { selectedChild = null; locationChild = child }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                            Icon(Icons.Default.Security, null, tint = DashboardOrange); Spacer(Modifier.width(10.dp)); Text("Location sharing & privacy", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    item {
+                        OutlinedButton(onClick = { generatePairing(child) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                            Icon(Icons.Default.Link, null); Spacer(Modifier.width(10.dp)); Text("Generate new pairing code")
+                        }
+                    }
+                    item {
+                        TextButton(onClick = { loadHistory(child) }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.History, null, tint = DashboardOrange); Spacer(Modifier.width(10.dp)); Text("View answered-question history", color = DashboardOrange, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-                Spacer(Modifier.height(14.dp))
-                OutlinedButton(
-                    onClick = { selectedChild = null; reviewChild = child },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.School, null, tint = DashboardOrange)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Review AI-generated questions", color = DashboardNavy, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(10.dp))
-                OutlinedButton(
-                    onClick = { selectedChild = null; analyticsChild = child },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.Timer, null, tint = DashboardOrange)
-                    Spacer(Modifier.width(10.dp))
-                    Text("View learning progress", color = DashboardNavy, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(10.dp))
-                OutlinedButton(
-                    onClick = { selectedChild = null; locationChild = child },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.Security, null, tint = DashboardOrange)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Location sharing & privacy", color = DashboardNavy, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(10.dp))
-                Button(
-                    onClick = { selectedChild = null; controlsChild = child },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = DashboardNavy),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.Lock, null)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Manage app & learning rules")
-                }
-                Spacer(Modifier.height(10.dp))
-                OutlinedButton(onClick = { generatePairing(child) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                    Icon(Icons.Default.Link, null)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Generate new pairing code")
-                }
-                Spacer(Modifier.height(10.dp))
-                TextButton(onClick = { loadHistory(child) }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.History, null, tint = DashboardOrange)
-                    Spacer(Modifier.width(10.dp))
-                    Text("View answered-question history", color = DashboardOrange, fontWeight = FontWeight.Bold)
-                }
             }
+        }
         }
     }
 
