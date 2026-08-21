@@ -32,6 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.eduk.app.cloud.CloudChild
@@ -94,12 +98,12 @@ fun ParentQuestionReviewSheet(child: CloudChild, parentToken: String?, onDismiss
             modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
         ) {
             item {
-                Text("Review learning questions", color = ReviewNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                Text("Review learning questions", color = ReviewNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                 Spacer(Modifier.height(5.dp))
                 Text("Approve only questions that accurately match ${child.displayName}'s material. Approved questions are the only ones delivered to the child.", color = ReviewMuted, style = MaterialTheme.typography.bodySmall)
             }
             if (isLoading) item {
-                Column(Modifier.fillMaxWidth().padding(vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxWidth().padding(vertical = 30.dp).semantics { liveRegion = LiveRegionMode.Polite }, horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = ReviewOrange)
                     Spacer(Modifier.height(10.dp))
                     Text("Loading review queue…", color = ReviewMuted)
@@ -109,7 +113,7 @@ fun ParentQuestionReviewSheet(child: CloudChild, parentToken: String?, onDismiss
             if (!isLoading && generated.isEmpty()) item {
                 Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(20.dp)) {
-                        Text("No questions awaiting review", color = ReviewInk, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                        Text("No questions awaiting review", color = ReviewInk, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                         Spacer(Modifier.height(6.dp))
                         Text("Use the child’s book scanner to generate a new set, then return here to approve each question before it appears in a challenge.", color = ReviewMuted, style = MaterialTheme.typography.bodySmall)
                     }
@@ -120,7 +124,7 @@ fun ParentQuestionReviewSheet(child: CloudChild, parentToken: String?, onDismiss
             }
             if (!isLoading && questions.any { it.reviewStatus != "generated" }) {
                 item {
-                    Text("Reviewed questions", color = ReviewNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                    Text("Reviewed questions", color = ReviewNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                 }
                 items(questions.filter { it.reviewStatus != "generated" }, key = { it.id }) { question ->
                     Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
@@ -181,7 +185,7 @@ private fun ReviewStatusPill(status: String) {
 
 @Composable
 private fun ReviewStatusCard(message: String) {
-    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive }) {
         Text(message, color = Color(0xFF8F3C2C), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp))
     }
 }

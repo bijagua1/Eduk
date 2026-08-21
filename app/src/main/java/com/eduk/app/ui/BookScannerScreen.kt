@@ -23,6 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.viewinterop.AndroidView
@@ -114,7 +118,7 @@ fun BookScannerScreen(onScanComplete: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Scan your study page", style = MaterialTheme.typography.headlineSmall, color = Color(0xFF0B1F3A))
+            Text("Scan your study page", style = MaterialTheme.typography.headlineSmall, color = Color(0xFF0B1F3A), modifier = Modifier.semantics { heading() })
             Text("Eduk uses the page you capture to create your next learning challenge.", color = Color(0xFF52667D), style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(20.dp))
             Surface(shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth().weight(1f), color = Color(0xFF0B1F3A)) {
@@ -126,7 +130,7 @@ fun BookScannerScreen(onScanComplete: () -> Unit) {
                         Spacer(Modifier.height(18.dp))
                         Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7A1A))) { Text("Allow camera") }
                     }
-                    generatedCount > 0 -> Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    generatedCount > 0 -> Column(Modifier.fillMaxSize().padding(28.dp).semantics { liveRegion = LiveRegionMode.Assertive }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFFFF7A1A), modifier = Modifier.size(62.dp))
                         Spacer(Modifier.height(16.dp))
                         Text("$generatedCount validated questions are ready", color = Color.White, style = MaterialTheme.typography.headlineSmall)
@@ -138,7 +142,7 @@ fun BookScannerScreen(onScanComplete: () -> Unit) {
                     else -> AndroidView(factory = { previewContext -> PreviewView(previewContext).also { previewView = it } }, modifier = Modifier.fillMaxSize())
                 }
             }
-            errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp)) }
+            errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp).semantics { liveRegion = LiveRegionMode.Assertive }) }
             if (hasCameraPermission && generatedCount == 0) {
                 Spacer(Modifier.height(16.dp))
                 Button(

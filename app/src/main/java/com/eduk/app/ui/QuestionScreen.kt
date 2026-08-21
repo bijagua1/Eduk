@@ -28,6 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -182,7 +186,7 @@ private fun ChallengeQuestionContent(
             Text(challenge.title, style = MaterialTheme.typography.labelLarge, color = ChallengeOrange, fontWeight = FontWeight.Bold)
             Text("Question $questionNumber · ${question.subject}", style = MaterialTheme.typography.labelSmall, color = ChallengeMuted)
             Spacer(Modifier.height(8.dp))
-            Text(question.questionText, style = MaterialTheme.typography.titleLarge, color = ChallengeInk, fontWeight = FontWeight.SemiBold)
+            Text(question.questionText, style = MaterialTheme.typography.titleLarge, color = ChallengeInk, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
         }
     }
     Spacer(Modifier.height(18.dp))
@@ -214,7 +218,7 @@ private fun ChallengeQuestionContent(
     } else {
         ChallengeResult(result = result, onContinue = onContinue)
     }
-    errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp)) }
+    errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp).semantics { liveRegion = LiveRegionMode.Assertive }) }
 }
 
 @Composable
@@ -227,7 +231,7 @@ private fun ChallengeResult(result: ChallengeAttemptResponse, onContinue: () -> 
         result.wasCorrect -> "Correct — keep going to complete this challenge."
         else -> "Not quite. Read the explanation and try again."
     }
-    Surface(color = color.copy(alpha = .10f), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = color.copy(alpha = .10f), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive }) {
         Column(Modifier.padding(16.dp)) {
             Text(message, color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             result.explanation?.let { explanation ->
@@ -244,7 +248,7 @@ private fun ChallengeResult(result: ChallengeAttemptResponse, onContinue: () -> 
 
 @Composable
 private fun LoadingChallenge() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) {
         CircularProgressIndicator(color = ChallengeOrange)
         Spacer(Modifier.height(14.dp))
         Text("Getting an approved challenge…", color = ChallengeMuted)
@@ -255,7 +259,7 @@ private fun LoadingChallenge() {
 private fun EmptyChallenge(message: String, onRetry: () -> Unit) {
     Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Challenge not ready", color = ChallengeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            Text("Challenge not ready", color = ChallengeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.height(8.dp))
             Text(message, color = ChallengeMuted, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(16.dp))

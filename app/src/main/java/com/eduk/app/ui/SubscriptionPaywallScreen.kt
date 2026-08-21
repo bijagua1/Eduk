@@ -12,6 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,12 +73,12 @@ fun SubscriptionPaywallScreen(onContinue: () -> Unit) {
                 Spacer(Modifier.height(32.dp))
                 CircularProgressIndicator()
                 Spacer(Modifier.height(16.dp))
-                Text("Verifying your Eduk Family access…", textAlign = TextAlign.Center)
+                Text("Verifying your Eduk Family access…", textAlign = TextAlign.Center, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
             errorMessage != null -> {
-                Text("Plan verification unavailable", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                Text("Plan verification unavailable", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
                 Spacer(Modifier.height(12.dp))
-                Text(errorMessage!!, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(errorMessage!!, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
                 Spacer(Modifier.height(24.dp))
                 OutlinedButton(onClick = { loadEntitlement() }) { Icon(Icons.Default.Refresh, null); Spacer(Modifier.width(8.dp)); Text("Try again") }
             }
@@ -92,7 +96,8 @@ private fun ActiveEntitlement(entitlement: EntitlementResponse, onContinue: () -
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.semantics { heading() }
     )
     Spacer(Modifier.height(12.dp))
     Text(
@@ -112,7 +117,7 @@ private fun ActiveEntitlement(entitlement: EntitlementResponse, onContinue: () -
 
 @Composable
 private fun FreeEntitlement(onContinue: () -> Unit) {
-    Text("Start with Eduk Free", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.primary)
+    Text("Start with Eduk Free", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { heading() })
     Spacer(Modifier.height(12.dp))
     Text("No paid plan is active. You can continue with one child profile and Eduk’s core learning and parental-control tools.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(28.dp))

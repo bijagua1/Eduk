@@ -34,6 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
@@ -226,12 +230,12 @@ fun ChildPolicyManagerSheet(
             modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
         ) {
             item {
-                Text("Rules for ${child.displayName}", color = RulesNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                Text("Rules for ${child.displayName}", color = RulesNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                 Spacer(Modifier.height(5.dp))
                 Text("Changes synchronize to their paired phone. Eduk keeps the last confirmed policy available offline.", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
             }
             if (loading) item {
-                Column(Modifier.fillMaxWidth().padding(vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxWidth().padding(vertical = 30.dp).semantics { liveRegion = LiveRegionMode.Polite }, horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = RulesOrange)
                     Spacer(Modifier.height(10.dp))
                     Text("Loading protected settings…", color = RulesMuted)
@@ -436,7 +440,7 @@ fun ChildPolicyManagerSheet(
 @Composable
 private fun SectionHeading(title: String, description: String) {
     Column {
-        Text(title, color = RulesNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+        Text(title, color = RulesNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.height(3.dp))
         Text(description, color = RulesMuted, style = MaterialTheme.typography.bodySmall)
     }
@@ -476,7 +480,7 @@ private fun ModePill(mode: String) {
 
 @Composable
 private fun StatusCard(message: String) {
-    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = Color(0xFFFFE8E1), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive }) {
         Text(message, color = Color(0xFF8F3C2C), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp))
     }
 }
