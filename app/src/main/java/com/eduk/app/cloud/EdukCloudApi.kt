@@ -463,6 +463,13 @@ interface EdukCloudService {
         @Body request: AppRuleRequest
     ): Response<Any>
 
+    @DELETE("api/mobile/v1/children/{childId}/app-rules/{ruleId}")
+    suspend fun deleteAppRule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Path("ruleId") ruleId: String
+    ): Response<Any>
+
     @POST("api/mobile/v1/children/{childId}/schedules")
     suspend fun createSchedule(
         @Header("Authorization") authorization: String,
@@ -470,11 +477,25 @@ interface EdukCloudService {
         @Body request: ScheduleRequest
     ): Response<Any>
 
+    @DELETE("api/mobile/v1/children/{childId}/schedules/{scheduleId}")
+    suspend fun deleteSchedule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Path("scheduleId") scheduleId: String
+    ): Response<Any>
+
     @POST("api/mobile/v1/children/{childId}/reward-rules")
     suspend fun createRewardRule(
         @Header("Authorization") authorization: String,
         @Path("childId") childId: String,
         @Body request: RewardRuleRequest
+    ): Response<Any>
+
+    @DELETE("api/mobile/v1/children/{childId}/reward-rules/{ruleId}")
+    suspend fun deleteRewardRule(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Path("ruleId") ruleId: String
     ): Response<Any>
 
     @POST("api/mobile/v1/children/{childId}/study-materials")
@@ -571,8 +592,11 @@ object EdukCloudRepository {
     suspend fun deleteSafePlace(parentToken: String, childId: String, safePlaceId: String) =
         body(service.deleteSafePlace(bearer(parentToken), childId, safePlaceId))
     suspend fun saveAppRule(parentToken: String, childId: String, request: AppRuleRequest) = body(service.saveAppRule(bearer(parentToken), childId, request))
+    suspend fun deleteAppRule(parentToken: String, childId: String, ruleId: String) = body(service.deleteAppRule(bearer(parentToken), childId, ruleId))
     suspend fun createSchedule(parentToken: String, childId: String, request: ScheduleRequest) = body(service.createSchedule(bearer(parentToken), childId, request))
+    suspend fun deleteSchedule(parentToken: String, childId: String, scheduleId: String) = body(service.deleteSchedule(bearer(parentToken), childId, scheduleId))
     suspend fun createRewardRule(parentToken: String, childId: String, request: RewardRuleRequest) = body(service.createRewardRule(bearer(parentToken), childId, request))
+    suspend fun deleteRewardRule(parentToken: String, childId: String, ruleId: String) = body(service.deleteRewardRule(bearer(parentToken), childId, ruleId))
     suspend fun submitStudyMaterial(studentToken: String, childId: String, request: StudyMaterialRequest) =
         body(service.submitStudyMaterial(bearer(studentToken), childId, request))
     suspend fun updateTime(parentToken: String, childId: String, deltaMinutes: Int) = body(service.updateTime(bearer(parentToken), childId, TimeAdjustmentRequest(deltaMinutes)))

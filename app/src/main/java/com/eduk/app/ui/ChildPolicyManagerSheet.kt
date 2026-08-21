@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +71,9 @@ fun ChildPolicyManagerSheet(
     var subjectsText by remember { mutableStateOf("") }
     var selectedDifficulty by remember { mutableStateOf("adaptive") }
     var learningGoals by remember { mutableStateOf("") }
+    var customPackageName by remember { mutableStateOf("") }
+    var customAppName by remember { mutableStateOf("") }
+    var customAppMode by remember { mutableStateOf("learning_gate") }
 
     fun reload() {
         if (parentToken == null) {
@@ -125,6 +129,47 @@ fun ChildPolicyManagerSheet(
                 .onFailure { message = "The school-hours rule could not be saved." }
             savingKey = null
         }
+    }
+
+    fun deleteAppRule(ruleId: String) {
+        if (parentToken == null) return
+        savingKey = "delete-app:$ruleId"
+        scope.launch {
+            runCatching { EdukCloudRepository.deleteAppRule(parentToken, child.id, ruleId) }
+                .onSuccess { message = "App rule removed."; reload(); onPolicyChanged() }
+                .onFailure { message = "That app rule could not be removed." }
+            savingKey = null
+        }
+    }
+
+    fun deleteSchedule(scheduleId: String) {
+        if (parentToken == null) return
+        savingKey = "delete-schedule:$scheduleId"
+        scope.launch {
+            runCatching { EdukCloudRepository.deleteSchedule(parentToken, child.id, scheduleId) }
+                .onSuccess { message = "Schedule removed."; reload(); onPolicyChanged() }
+                .onFailure { message = "That schedule could not be removed." }
+            savingKey = null
+        }
+    }
+
+    fun deleteRewardRule(ruleId: String) {
+        if (parentToken == null) return
+        savingKey = "delete-reward:$ruleId"
+        scope.launch {
+            runCatching { EdukCloudRepository.deleteRewardRule(parentToken, child.id, ruleId) }
+                .onSuccess { message = "Reward rule removed."; reload(); onPolicyChanged() }
+                .onFailure { message = "That reward rule could not be removed." }
+            savingKey = null
+        }
+    }
+
+    fun saveCustomAppRule() {
+        if (customPackageName.trim().length < 3 || customAppName.trim().isBlank()) {
+            message = "Enter the app name and Android package name to save a custom rule."
+            return
+        }
+        saveAppPreset("custom-app", AppRuleRequest(customPackageName.trim(), customAppName.trim(), "Custom", customAppMode))
     }
 
     fun saveRewardRule() {
@@ -234,6 +279,35 @@ fun ChildPolicyManagerSheet(
                         onSave = { saveAppPreset("roblox", AppRuleRequest("com.roblox.client", "Roblox", "Games", "learning_gate")) }
                     )
                 }
+                item { SectionHeading("Custom app rule", "Add any Android package to the allowed, blocked, or learning-first list.") }
+                item {
+                    OutlinedTextField(
+                        value = customAppName, onValueChange = { customAppName = it }, label = { Text("App name") },
+                        placeholder = { Text("Minecraft") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = customPackageName,
+                        onValueChange = { customPackageName = it.lowercase().filter { char -> char.isLetterOrDigit() || char == '.' || char == '_' } },
+                        label = { Text("Android package name") }, placeholder = { Text("com.mojang.minecraftpe") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                    )
+                }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf("allow" to "Allow", "learning_gate" to "Learn first", "block" to "Block").forEach { (mode, label) ->
+                            OutlinedButton(
+                                onClick = { customAppMode = mode }, modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = if (customAppMode == mode) RulesNavy else Color.Transparent, contentColor = if (customAppMode == mode) Color.White else RulesNavy)
+                            ) { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        }
+                    }
+                }
+                item {
+                    Button(onClick = ::saveCustomAppRule, enabled = savingKey == null, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = RulesNavy), shape = RoundedCornerShape(14.dp)) {
+                        Text(if (savingKey == "custom-app") "Saving app rule…" else "Save custom app rule", fontWeight = FontWeight.Bold)
+                    }
+                }
                 if (current.appRules.isNotEmpty()) {
                     item { SectionHeading("Active app rules", "The paired student device enforces these apps using the latest policy.") }
                     items(current.appRules, key = { it.id }) { rule ->
@@ -244,6 +318,9 @@ fun ChildPolicyManagerSheet(
                                     Text(rule.packageName, color = RulesMuted, style = MaterialTheme.typography.labelSmall)
                                 }
                                 ModePill(rule.accessMode)
+                                TextButton(onClick = { deleteAppRule(rule.id) }, enabled = savingKey == null) {
+                                    Text(if (savingKey == "delete-app:${rule.id}") "Removing" else "Remove")
+                                }
                             }
                         }
                     }
@@ -313,6 +390,22 @@ fun ChildPolicyManagerSheet(
                         modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = RulesOrange), shape = RoundedCornerShape(16.dp)
                     ) { Text(if (savingKey == "reward") "Saving reward…" else "Save learning reward", fontWeight = FontWeight.Bold) }
                 }
+                if (current.rewardRules.isNotEmpty()) {
+                    item { SectionHeading("Active reward rules", "Rewards are calculated in the cloud before time is awarded.") }
+                    items(current.rewardRules, key = { it.id }) { rule ->
+                        Surface(color = Color(0xFFFFF6EE), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(rule.name, color = RulesInk, fontWeight = FontWeight.Bold)
+                                    Text("${rule.correctAnswerMinutes} min per answer · ${rule.dailyMaxEarnedMinutes} min daily cap", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+                                }
+                                TextButton(onClick = { deleteRewardRule(rule.id) }, enabled = savingKey == null) {
+                                    Text(if (savingKey == "delete-reward:${rule.id}") "Removing" else "Remove")
+                                }
+                            }
+                        }
+                    }
+                }
                 item { HorizontalDivider(color = Color(0xFFE4E8EF)) }
                 item { SectionHeading("Schedules", "Create a protected routine for school time, homework, and bedtime.") }
                 item {
@@ -323,9 +416,14 @@ fun ChildPolicyManagerSheet(
                 if (current.schedules.isNotEmpty()) {
                     items(current.schedules, key = { it.id }) { schedule ->
                         Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(14.dp)) {
-                                Text(schedule.name, color = RulesInk, fontWeight = FontWeight.Bold)
-                                Text("${schedule.mode.replace('_', ' ')} · days ${schedule.daysOfWeek}", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(schedule.name, color = RulesInk, fontWeight = FontWeight.Bold)
+                                    Text("${schedule.mode.replace('_', ' ')} · days ${schedule.daysOfWeek}", color = RulesMuted, style = MaterialTheme.typography.bodySmall)
+                                }
+                                TextButton(onClick = { deleteSchedule(schedule.id) }, enabled = savingKey == null) {
+                                    Text(if (savingKey == "delete-schedule:${schedule.id}") "Removing" else "Remove")
+                                }
                             }
                         }
                     }
