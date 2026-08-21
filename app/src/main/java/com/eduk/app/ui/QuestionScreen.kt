@@ -1,112 +1,104 @@
 package com.eduk.app.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.eduk.app.cloud.EdukCloudRepository
+import com.eduk.app.cloud.EdukSessionStore
+import com.eduk.app.cloud.LearningEventRequest
 import com.eduk.app.service.AppMonitoringService
+import kotlinx.coroutines.launch
 
 @Composable
 fun QuestionScreen(onCorrect: () -> Unit) {
+    val context = LocalContext.current
+    val sessionStore = remember { EdukSessionStore(context) }
+    val scope = rememberCoroutineScope()
     var selectedOption by remember { mutableStateOf<Int?>(null) }
     var showResult by remember { mutableStateOf(false) }
     var isCorrect by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var syncError by remember { mutableStateOf<String?>(null) }
+
+    val questionText = "What is the primary function of the mitochondria in a cell?"
+    val options = listOf("Waste Removal", "Energy Production", "Storage", "Protein Synthesis")
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "Eduk Challenge",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Answer to unlock 10 minutes",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Source: Biology Textbook (Scanned by AI)",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "What is the primary function of the mitochondria in a cell?",
-                    style = MaterialTheme.typography.titleLarge
-                )
+        Text("Eduk Challenge", style = MaterialTheme.typography.headlineMedium, color = Color(0xFF0B1F3A), fontWeight = FontWeight.ExtraBold)
+        Text("Answer correctly to earn 10 minutes", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF62738A))
+        Spacer(Modifier.height(32.dp))
+        Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = Color(0xFFF4F6FA)) {
+            Column(Modifier.padding(20.dp)) {
+                Text("Learning challenge", style = MaterialTheme.typography.labelLarge, color = Color(0xFFFF7A1A), fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text(questionText, style = MaterialTheme.typography.titleLarge, color = Color(0xFF182C45), fontWeight = FontWeight.SemiBold)
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        val options = listOf("Waste Removal", "Energy Production", "Storage", "Protein Synthesis")
+        Spacer(Modifier.height(24.dp))
         options.forEachIndexed { index, option ->
             OutlinedButton(
                 onClick = { if (!showResult) selectedOption = index },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                colors = if (selectedOption == index) 
-                    ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    else ButtonDefaults.outlinedButtonColors()
-            ) {
-                Text(text = option)
-            }
+                colors = if (selectedOption == index) ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFE6D4)) else ButtonDefaults.outlinedButtonColors(),
+                shape = RoundedCornerShape(16.dp)
+            ) { Text(option, color = Color(0xFF182C45), fontWeight = FontWeight.SemiBold) }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
+        Spacer(Modifier.height(30.dp))
         if (!showResult) {
             Button(
                 onClick = {
-                    showResult = true
                     isCorrect = selectedOption == 1
-                    if (isCorrect) {
-                        AppMonitoringService.grantAccess(10)
-                        onCorrect()
+                    showResult = true
+                    val token = sessionStore.studentToken()
+                    if (token == null) {
+                        syncError = "This student phone is not linked to Eduk Family Cloud."
+                        return@Button
+                    }
+                    isSyncing = true
+                    scope.launch {
+                        runCatching {
+                            EdukCloudRepository.recordLearningEvent(token, LearningEventRequest(questionText, "Biology", isCorrect))
+                        }.onSuccess { result ->
+                            if (isCorrect) {
+                                AppMonitoringService.grantAccess(result.minutesAwarded)
+                                onCorrect()
+                            }
+                        }.onFailure {
+                            syncError = "Your answer could not sync. Please reconnect before trying again."
+                        }
+                        isSyncing = false
                     }
                 },
-                enabled = selectedOption != null,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                enabled = selectedOption != null && !isSyncing,
+                modifier = Modifier.fillMaxWidth().height(58.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7A1A)),
+                shape = RoundedCornerShape(18.dp)
             ) {
-                Text("Confirm Answer", fontSize = 18.sp)
+                if (isSyncing) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Confirm answer", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
         } else {
             ResultView(isCorrect = isCorrect)
         }
+        syncError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp)) }
     }
 }
 
 @Composable
 fun ResultView(isCorrect: Boolean) {
-    val color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-    val message = if (isCorrect) "Correct! You've earned 10 minutes." else "Not quite. Try another question."
-    
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = message, color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        if (isCorrect) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Enjoy your screen time!", style = MaterialTheme.typography.bodyMedium)
-        } else {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { /* In a real app, load new question */ }) {
-                Text("Try Another Question")
-            }
-        }
-    }
+    val color = if (isCorrect) Color(0xFF147A50) else MaterialTheme.colorScheme.error
+    val message = if (isCorrect) "Correct — synchronizing your 10 minutes." else "Not quite. Review the material and try another question."
+    Text(text = message, color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 }

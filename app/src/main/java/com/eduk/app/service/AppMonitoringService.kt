@@ -14,6 +14,10 @@ class AppMonitoringService : AccessibilityService() {
         fun grantAccess(minutes: Int) {
             instance?.performGrant(minutes)
         }
+
+        fun setBlockingEnabled(enabled: Boolean) {
+            instance?.applyBlockingState(enabled)
+        }
         
         fun isServiceRunning(): Boolean = instance != null
     }
@@ -28,6 +32,7 @@ class AppMonitoringService : AccessibilityService() {
     
     private var isUnlocked = false
     private var unlockUntil = 0L
+    private var isBlockingEnabled = true
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -49,6 +54,7 @@ class AppMonitoringService : AccessibilityService() {
     }
 
     private fun checkAccess(packageName: String) {
+        if (!isBlockingEnabled) return
         val currentTime = System.currentTimeMillis()
         if (!isUnlocked || currentTime > unlockUntil) {
             Log.d("EdukMonitor", "Blocking access to $packageName")
@@ -69,6 +75,15 @@ class AppMonitoringService : AccessibilityService() {
         isUnlocked = true
         unlockUntil = System.currentTimeMillis() + (minutes * 60 * 1000)
         Log.d("EdukMonitor", "Access granted for $minutes minutes")
+    }
+
+    private fun applyBlockingState(enabled: Boolean) {
+        isBlockingEnabled = enabled
+        if (!enabled) {
+            isUnlocked = true
+            unlockUntil = Long.MAX_VALUE
+        }
+        Log.d("EdukMonitor", "Remote blocking state updated: $enabled")
     }
 
     override fun onInterrupt() {
