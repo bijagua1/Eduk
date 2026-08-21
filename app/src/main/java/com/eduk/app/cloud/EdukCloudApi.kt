@@ -4,6 +4,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -271,6 +272,31 @@ data class StudyMaterialResponse(
     val processingStatus: String,
     val questions: List<GeneratedCloudQuestion>
 )
+data class LocationSettingsResponse(
+    val isSharingEnabled: Boolean,
+    val consentGrantedAt: String? = null,
+    val retentionDays: Int = 7
+)
+data class LocationSettingsRequest(
+    val isSharingEnabled: Boolean,
+    val retentionDays: Int
+)
+data class SafePlaceRequest(
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val radiusMeters: Int
+)
+data class StudentLocationReportRequest(
+    val latitude: Double,
+    val longitude: Double,
+    val accuracyMeters: Int,
+    val batteryPercent: Int? = null
+)
+data class StudentLocationReportResponse(
+    val accepted: Boolean,
+    val expiresAt: String? = null
+)
 
 interface EdukCloudService {
     @POST("api/mobile/v1/parents/register")
@@ -311,6 +337,15 @@ interface EdukCloudService {
 
     @GET("api/mobile/v1/students/policy")
     suspend fun getStudentPolicy(@Header("Authorization") authorization: String): Response<StudentPolicyResponse>
+
+    @GET("api/mobile/v1/students/location-settings")
+    suspend fun getStudentLocationSettings(@Header("Authorization") authorization: String): Response<LocationSettingsResponse>
+
+    @POST("api/mobile/v1/students/location-reports")
+    suspend fun reportStudentLocation(
+        @Header("Authorization") authorization: String,
+        @Body request: StudentLocationReportRequest
+    ): Response<StudentLocationReportResponse>
 
     @GET("api/mobile/v1/students/challenge")
     suspend fun getStudentChallenge(@Header("Authorization") authorization: String): Response<StudentChallengeResponse>
@@ -362,6 +397,33 @@ interface EdukCloudService {
         @Path("childId") childId: String,
         @Body request: LearningPreferencesRequest
     ): Response<LearningPreferencesResponse>
+
+    @GET("api/mobile/v1/children/{childId}/location-settings")
+    suspend fun getLocationSettings(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<LocationSettingsResponse>
+
+    @PUT("api/mobile/v1/children/{childId}/location-settings")
+    suspend fun saveLocationSettings(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: LocationSettingsRequest
+    ): Response<LocationSettingsResponse>
+
+    @POST("api/mobile/v1/children/{childId}/safe-places")
+    suspend fun createSafePlace(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Body request: SafePlaceRequest
+    ): Response<Any>
+
+    @DELETE("api/mobile/v1/children/{childId}/safe-places/{safePlaceId}")
+    suspend fun deleteSafePlace(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Path("safePlaceId") safePlaceId: String
+    ): Response<Any>
 
     @POST("api/mobile/v1/children/{childId}/app-rules")
     suspend fun saveAppRule(
@@ -453,6 +515,9 @@ object EdukCloudRepository {
     suspend fun refreshStudentSession(studentToken: String) = body(service.refreshStudentSession(bearer(studentToken)))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
+    suspend fun getStudentLocationSettings(studentToken: String) = body(service.getStudentLocationSettings(bearer(studentToken)))
+    suspend fun reportStudentLocation(studentToken: String, request: StudentLocationReportRequest) =
+        body(service.reportStudentLocation(bearer(studentToken), request))
     suspend fun getStudentChallenge(studentToken: String) = body(service.getStudentChallenge(bearer(studentToken)))
     suspend fun getStudentLearningProgress(studentToken: String) = body(service.getStudentLearningProgress(bearer(studentToken)))
     suspend fun submitChallengeAttempt(studentToken: String, request: ChallengeAttemptRequest) =
@@ -465,6 +530,13 @@ object EdukCloudRepository {
     suspend fun getLearningPreferences(parentToken: String, childId: String) = body(service.getLearningPreferences(bearer(parentToken), childId))
     suspend fun saveLearningPreferences(parentToken: String, childId: String, request: LearningPreferencesRequest) =
         body(service.saveLearningPreferences(bearer(parentToken), childId, request))
+    suspend fun getLocationSettings(parentToken: String, childId: String) = body(service.getLocationSettings(bearer(parentToken), childId))
+    suspend fun saveLocationSettings(parentToken: String, childId: String, request: LocationSettingsRequest) =
+        body(service.saveLocationSettings(bearer(parentToken), childId, request))
+    suspend fun createSafePlace(parentToken: String, childId: String, request: SafePlaceRequest) =
+        body(service.createSafePlace(bearer(parentToken), childId, request))
+    suspend fun deleteSafePlace(parentToken: String, childId: String, safePlaceId: String) =
+        body(service.deleteSafePlace(bearer(parentToken), childId, safePlaceId))
     suspend fun saveAppRule(parentToken: String, childId: String, request: AppRuleRequest) = body(service.saveAppRule(bearer(parentToken), childId, request))
     suspend fun createSchedule(parentToken: String, childId: String, request: ScheduleRequest) = body(service.createSchedule(bearer(parentToken), childId, request))
     suspend fun createRewardRule(parentToken: String, childId: String, request: RewardRuleRequest) = body(service.createRewardRule(bearer(parentToken), childId, request))

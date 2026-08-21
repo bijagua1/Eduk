@@ -52,6 +52,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
     var controlsChild by remember { mutableStateOf<CloudChild?>(null) }
     var reviewChild by remember { mutableStateOf<CloudChild?>(null) }
     var analyticsChild by remember { mutableStateOf<CloudChild?>(null) }
+    var locationChild by remember { mutableStateOf<CloudChild?>(null) }
 
     fun refreshDashboard() {
         val token = sessionStore.parentToken()
@@ -244,6 +245,16 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     Text("View learning progress", color = DashboardNavy, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { selectedChild = null; locationChild = child },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Security, null, tint = DashboardOrange)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Location sharing & privacy", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = { selectedChild = null; controlsChild = child },
                     modifier = Modifier.fillMaxWidth(),
@@ -292,6 +303,14 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             child = child,
             parentToken = sessionStore.parentToken(),
             onDismiss = { analyticsChild = null }
+        )
+    }
+
+    locationChild?.let { child ->
+        ChildLocationSettingsSheet(
+            child = child,
+            parentToken = sessionStore.parentToken(),
+            onDismiss = { locationChild = null }
         )
     }
 

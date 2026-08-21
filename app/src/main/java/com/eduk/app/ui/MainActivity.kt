@@ -1,8 +1,12 @@
 package com.eduk.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -21,15 +25,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.EdukSessionStore
 import com.eduk.app.cloud.LearningProgressResponse
+import com.eduk.app.cloud.StudentLocationReportRequest
 import com.eduk.app.cloud.StudentStateResponse
 import com.eduk.app.service.AppMonitoringService
 import com.eduk.app.ui.theme.EdukTheme
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 
 private val HomeNavy = Color(0xFF0B1F3A)
@@ -112,6 +119,49 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     var state by remember { mutableStateOf<StudentStateResponse?>(null) }
     var learningProgress by remember { mutableStateOf<LearningProgressResponse?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLocationSharingEnabled by remember { mutableStateOf(false) }
+    var locationStatus by remember { mutableStateOf<String?>(null) }
+    val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    fun shareCurrentLocation() {
+        val token = sessionStore.studentToken()
+        if (token == null) {
+            locationStatus = "This device is not paired to a student account."
+            return
+        }
+        locationStatus = "Getting your current location…"
+        locationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location == null) {
+                    locationStatus = "Location is unavailable right now. Turn on device location and try again."
+                    return@addOnSuccessListener
+                }
+                scope.launch {
+                    runCatching {
+                        EdukCloudRepository.reportStudentLocation(
+                            token,
+                            StudentLocationReportRequest(
+                                latitude = location.latitude,
+                                longitude = location.longitude,
+                                accuracyMeters = location.accuracy.coerceAtLeast(0f).toInt(),
+                                batteryPercent = null
+                            )
+                        )
+                    }.onSuccess { locationStatus = "Location shared securely with your family." }
+                        .onFailure { locationStatus = "Your location could not be shared. Check your connection and try again." }
+                }
+            }
+            .addOnFailureListener { locationStatus = "Location is unavailable right now. Please try again." }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) shareCurrentLocation()
+        else locationStatus = "Location permission was not granted. You can enable it later in Android settings."
+    }
 
     fun refresh() {
         val token = sessionStore.studentToken()
@@ -129,10 +179,13 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 val status = EdukCloudRepository.getStudentState(activeToken)
                 val policy = EdukCloudRepository.getStudentPolicy(activeToken)
                 val progress = EdukCloudRepository.getStudentLearningProgress(activeToken)
-                Triple(status, policy, progress)
-            }.onSuccess { (response, policy, progress) ->
+                val locationSettings = EdukCloudRepository.getStudentLocationSettings(activeToken)
+                Triple(status, policy, progress to locationSettings)
+            }.onSuccess { (response, policy, progressAndLocation) ->
+                    val (progress, locationSettings) = progressAndLocation
                     state = response
                     learningProgress = progress
+                    isLocationSharingEnabled = locationSettings.isSharingEnabled
                     AppMonitoringService.applyRemotePolicy(context, policy)
                 }
                 .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
@@ -178,6 +231,35 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
                 learningProgress?.let { progress ->
                     StudentProgressCard(progress)
+                    Spacer(Modifier.height(20.dp))
+                }
+                if (isLocationSharingEnabled) {
+                    Surface(color = Color(0xFFEAF3FF), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(20.dp)) {
+                            Text("Family location sharing", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                            Spacer(Modifier.height(6.dp))
+                            Text("Your parent enabled location sharing for this paired device. Eduk shares your position only when you choose the button below.", color = Color(0xFF4F6078), style = MaterialTheme.typography.bodySmall)
+                            locationStatus?.let {
+                                Spacer(Modifier.height(10.dp))
+                                Text(it, color = HomeNavy, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                            }
+                            Spacer(Modifier.height(14.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                                    if (hasLocationPermission) shareCurrentLocation()
+                                    else locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Icon(Icons.Default.Security, null, tint = HomeNavy)
+                                Spacer(Modifier.width(9.dp))
+                                Text("Share current location", color = HomeNavy, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(20.dp))
                 }
                 Surface(color = Color.White, shape = RoundedCornerShape(24.dp), shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
