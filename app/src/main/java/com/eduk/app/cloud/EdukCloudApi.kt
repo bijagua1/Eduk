@@ -95,6 +95,47 @@ data class LearningHistoryEvent(
     val answeredAt: String
 )
 data class LearningHistoryResponse(val events: List<LearningHistoryEvent>)
+data class CloudControlPolicy(
+    val childId: String,
+    val revision: Int,
+    val isBlockingEnabled: Boolean,
+    val lockEntertainmentUntilLearning: Boolean,
+    val dailyEarnedTimeCapMinutes: Int
+)
+data class CloudAppRule(
+    val id: String,
+    val packageName: String,
+    val displayName: String? = null,
+    val category: String? = null,
+    val accessMode: String,
+    val dailyLimitMinutes: Int? = null,
+    val isEnabled: Boolean = true
+)
+data class CloudSchedule(
+    val id: String,
+    val name: String,
+    val daysOfWeek: String,
+    val startMinuteOfDay: Int,
+    val endMinuteOfDay: Int,
+    val mode: String,
+    val isEnabled: Boolean = true
+)
+data class CloudRewardRule(
+    val id: String,
+    val name: String,
+    val subject: String? = null,
+    val correctAnswerMinutes: Int,
+    val completedChallengeMinutes: Int,
+    val dailyMaxEarnedMinutes: Int,
+    val minimumCorrectAnswers: Int,
+    val isActive: Boolean = true
+)
+data class StudentPolicyResponse(
+    val policy: CloudControlPolicy,
+    val appRules: List<CloudAppRule>,
+    val schedules: List<CloudSchedule>,
+    val rewardRules: List<CloudRewardRule>
+)
 
 interface EdukCloudService {
     @POST("api/mobile/v1/parents/register")
@@ -126,6 +167,9 @@ interface EdukCloudService {
 
     @GET("api/mobile/v1/students/state")
     suspend fun getStudentState(@Header("Authorization") authorization: String): Response<StudentStateResponse>
+
+    @GET("api/mobile/v1/students/policy")
+    suspend fun getStudentPolicy(@Header("Authorization") authorization: String): Response<StudentPolicyResponse>
 
     @PATCH("api/mobile/v1/children/{childId}/time")
     suspend fun updateTime(
@@ -186,6 +230,7 @@ object EdukCloudRepository {
     suspend fun pairStudentDevice(request: StudentPairRequest) = body(service.pairStudentDevice(request))
     suspend fun loginStudent(request: StudentLoginRequest) = body(service.loginStudent(request))
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
+    suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
     suspend fun updateTime(parentToken: String, childId: String, deltaMinutes: Int) = body(service.updateTime(bearer(parentToken), childId, TimeAdjustmentRequest(deltaMinutes)))
     suspend fun updateBlocking(parentToken: String, childId: String, isBlockingEnabled: Boolean) = body(service.updateBlocking(bearer(parentToken), childId, BlockingRequest(isBlockingEnabled)))
     suspend fun getLearningHistory(parentToken: String, childId: String) = body(service.getLearningHistory(bearer(parentToken), childId))

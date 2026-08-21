@@ -116,10 +116,13 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
             return
         }
         scope.launch {
-            runCatching { EdukCloudRepository.getStudentState(token) }
-                .onSuccess { response ->
+            runCatching {
+                val status = EdukCloudRepository.getStudentState(token)
+                val policy = EdukCloudRepository.getStudentPolicy(token)
+                status to policy
+            }.onSuccess { (response, policy) ->
                     state = response
-                    AppMonitoringService.setBlockingEnabled(response.child.isBlockingEnabled)
+                    AppMonitoringService.applyRemotePolicy(context, policy)
                 }
                 .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
         }
