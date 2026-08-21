@@ -64,7 +64,14 @@ fun EdukApp(startDestination: String) {
         }
         composable("subscription") {
             SubscriptionPaywallScreen(onSubscribed = {
-                navController.navigate("onboarding/parent")
+                navController.navigate("add_child")
+            })
+        }
+        composable("add_child") {
+            AddChildScreen(onChildAdded = {
+                navController.navigate("parent_dashboard") {
+                    popUpTo("add_child") { inclusive = true }
+                }
             })
         }
         composable("onboarding/{role}") { backStackEntry ->
@@ -81,7 +88,7 @@ fun EdukApp(startDestination: String) {
             )
         }
         composable("parent_dashboard") { 
-            ParentDashboardScreen() 
+            ParentDashboardScreen(onAddChild = { navController.navigate("add_child") }) 
         }
         composable("child_home") {
             ChildHomeScreen(onOpenScanner = { navController.navigate("scanner") })

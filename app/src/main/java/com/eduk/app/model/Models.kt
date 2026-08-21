@@ -14,22 +14,22 @@ data class Question(
     val options: List<String>,
     val correctOptionIndex: Int,
     val explanation: String,
-    val sourceMaterial: String? = null, // Used for AI Vision generated questions
+    val sourceMaterial: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "student_profile")
 data class StudentProfile(
-    @PrimaryKey val id: Int = 1, // Only one profile for MVP
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String,
     val age: Int,
     val grade: Int,
     val country: String = "USA",
     val language: String = "English",
-    val preferredSubjects: List<String>,
     val dailyTimeLimitMinutes: Int = 60,
-    val timeEarnedPerCorrectAnswer: Int = 15,
-    val parentPinHash: String
+    val timeEarnedMinutes: Int = 120,
+    val accuracy: Int = 85,
+    val isProtected: Boolean = true
 )
 
 @Entity(tableName = "usage_stats")

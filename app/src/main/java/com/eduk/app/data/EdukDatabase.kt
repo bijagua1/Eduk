@@ -23,11 +23,14 @@ interface QuestionDao {
 
 @Dao
 interface ProfileDao {
-    @Query("SELECT * FROM student_profile WHERE id = 1")
-    fun getProfile(): Flow<StudentProfile?>
+    @Query("SELECT * FROM student_profile")
+    fun getAllProfiles(): Flow<List<StudentProfile>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun updateProfile(profile: StudentProfile)
+    suspend fun insertProfile(profile: StudentProfile)
+
+    @Query("DELETE FROM student_profile WHERE id = :id")
+    suspend fun deleteProfile(id: String)
 }
 
 class Converters {
@@ -45,7 +48,7 @@ class Converters {
 
 @Database(
     entities = [Question::class, StudentProfile::class, UsageStats::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -63,7 +66,9 @@ abstract class EdukDatabase : RoomDatabase() {
                     context.applicationContext,
                     EdukDatabase::class.java,
                     "eduk_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
