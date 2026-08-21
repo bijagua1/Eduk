@@ -5,6 +5,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -162,12 +163,20 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
             .addOnFailureListener { locationStatus = "Location is unavailable right now. Please try again." }
     }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) showLocationConsentDialog = true
+        else locationStatus = "Notification permission is required before periodic location sharing can start, so its status always stays visible."
+    }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) showLocationConsentDialog = true
+        if (granted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else showLocationConsentDialog = true
+        }
         else locationStatus = "Location permission was not granted. You can enable it later in Android settings."
     }
 
@@ -298,7 +307,11 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                                         isContinuousLocationSharingActive = false
                                         ConsentedLocationService.stop(context)
                                         locationStatus = "Location sharing is off on this device."
-                                    } else if (hasLocationPermission) showLocationConsentDialog = true
+                                    } else if (hasLocationPermission) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        } else showLocationConsentDialog = true
+                                    }
                                     else locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                                 },
                                 modifier = Modifier.fillMaxWidth(),
