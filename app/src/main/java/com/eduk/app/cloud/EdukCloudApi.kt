@@ -9,6 +9,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PATCH
 import retrofit2.http.Path
+import retrofit2.http.PUT
 
 data class EdukCloudErrorBody(val error: EdukCloudError? = null)
 data class EdukCloudError(val code: String, val message: String)
