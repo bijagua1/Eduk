@@ -167,6 +167,20 @@ data class ChallengeAttemptResponse(
     val challengeCompleted: Boolean,
     val explanation: String? = null
 )
+data class ParentQuestion(
+    val id: String,
+    val questionText: String,
+    val choicesJson: String? = null,
+    val correctAnswer: String,
+    val explanation: String,
+    val subject: String,
+    val topic: String,
+    val difficulty: Int,
+    val reviewStatus: String,
+    val validationStatus: String
+)
+data class ParentQuestionListResponse(val questions: List<ParentQuestion>)
+data class ReviewQuestionRequest(val reviewStatus: String)
 data class ParentPolicyResponse(
     val policy: CloudControlPolicy,
     val appRules: List<CloudAppRule>,
@@ -262,6 +276,20 @@ interface EdukCloudService {
         @Header("Authorization") authorization: String,
         @Body request: ChallengeAttemptRequest
     ): Response<ChallengeAttemptResponse>
+
+    @GET("api/mobile/v1/children/{childId}/questions")
+    suspend fun getParentQuestions(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<ParentQuestionListResponse>
+
+    @PATCH("api/mobile/v1/children/{childId}/questions/{questionId}/review")
+    suspend fun reviewParentQuestion(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String,
+        @Path("questionId") questionId: String,
+        @Body request: ReviewQuestionRequest
+    ): Response<Any>
 
     @GET("api/mobile/v1/children/{childId}/policy")
     suspend fun getParentPolicy(
@@ -360,6 +388,9 @@ object EdukCloudRepository {
     suspend fun getStudentChallenge(studentToken: String) = body(service.getStudentChallenge(bearer(studentToken)))
     suspend fun submitChallengeAttempt(studentToken: String, request: ChallengeAttemptRequest) =
         body(service.submitChallengeAttempt(bearer(studentToken), request))
+    suspend fun getParentQuestions(parentToken: String, childId: String) = body(service.getParentQuestions(bearer(parentToken), childId))
+    suspend fun reviewParentQuestion(parentToken: String, childId: String, questionId: String, reviewStatus: String) =
+        body(service.reviewParentQuestion(bearer(parentToken), childId, questionId, ReviewQuestionRequest(reviewStatus)))
     suspend fun getParentPolicy(parentToken: String, childId: String) = body(service.getParentPolicy(bearer(parentToken), childId))
     suspend fun saveAppRule(parentToken: String, childId: String, request: AppRuleRequest) = body(service.saveAppRule(bearer(parentToken), childId, request))
     suspend fun createSchedule(parentToken: String, childId: String, request: ScheduleRequest) = body(service.createSchedule(bearer(parentToken), childId, request))

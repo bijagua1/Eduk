@@ -50,6 +50,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
     var history by remember { mutableStateOf<List<LearningHistoryEvent>>(emptyList()) }
     var showHistory by remember { mutableStateOf(false) }
     var controlsChild by remember { mutableStateOf<CloudChild?>(null) }
+    var reviewChild by remember { mutableStateOf<CloudChild?>(null) }
 
     fun refreshDashboard() {
         val token = sessionStore.parentToken()
@@ -215,6 +216,16 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(14.dp))
+                OutlinedButton(
+                    onClick = { selectedChild = null; reviewChild = child },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.School, null, tint = DashboardOrange)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Review AI-generated questions", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = { selectedChild = null; controlsChild = child },
                     modifier = Modifier.fillMaxWidth(),
@@ -247,6 +258,14 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             parentToken = sessionStore.parentToken(),
             onDismiss = { controlsChild = null },
             onPolicyChanged = { refreshDashboard() }
+        )
+    }
+
+    reviewChild?.let { child ->
+        ParentQuestionReviewSheet(
+            child = child,
+            parentToken = sessionStore.parentToken(),
+            onDismiss = { reviewChild = null }
         )
     }
 
