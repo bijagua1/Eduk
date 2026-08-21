@@ -51,6 +51,7 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
     var showHistory by remember { mutableStateOf(false) }
     var controlsChild by remember { mutableStateOf<CloudChild?>(null) }
     var reviewChild by remember { mutableStateOf<CloudChild?>(null) }
+    var analyticsChild by remember { mutableStateOf<CloudChild?>(null) }
 
     fun refreshDashboard() {
         val token = sessionStore.parentToken()
@@ -226,6 +227,16 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                     Text("Review AI-generated questions", color = DashboardNavy, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { selectedChild = null; analyticsChild = child },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Timer, null, tint = DashboardOrange)
+                    Spacer(Modifier.width(10.dp))
+                    Text("View learning progress", color = DashboardNavy, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = { selectedChild = null; controlsChild = child },
                     modifier = Modifier.fillMaxWidth(),
@@ -266,6 +277,14 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
             child = child,
             parentToken = sessionStore.parentToken(),
             onDismiss = { reviewChild = null }
+        )
+    }
+
+    analyticsChild?.let { child ->
+        ParentLearningProgressSheet(
+            child = child,
+            parentToken = sessionStore.parentToken(),
+            onDismiss = { analyticsChild = null }
         )
     }
 

@@ -167,6 +167,23 @@ data class ChallengeAttemptResponse(
     val challengeCompleted: Boolean,
     val explanation: String? = null
 )
+data class SubjectLearningProgress(
+    val subject: String,
+    val attempts: Int,
+    val correct: Int,
+    val minutesEarned: Int,
+    val accuracyPercent: Int
+)
+data class LearningProgressResponse(
+    val totalAttempts: Int,
+    val correctAttempts: Int,
+    val accuracyPercent: Int,
+    val minutesEarned: Int,
+    val currentStreak: Int,
+    val xp: Int,
+    val completedChallenges: Int,
+    val bySubject: List<SubjectLearningProgress>
+)
 data class ParentQuestion(
     val id: String,
     val questionText: String,
@@ -271,6 +288,9 @@ interface EdukCloudService {
     @GET("api/mobile/v1/students/challenge")
     suspend fun getStudentChallenge(@Header("Authorization") authorization: String): Response<StudentChallengeResponse>
 
+    @GET("api/mobile/v1/students/learning-progress")
+    suspend fun getStudentLearningProgress(@Header("Authorization") authorization: String): Response<LearningProgressResponse>
+
     @POST("api/mobile/v1/students/challenge-attempts")
     suspend fun submitChallengeAttempt(
         @Header("Authorization") authorization: String,
@@ -282,6 +302,12 @@ interface EdukCloudService {
         @Header("Authorization") authorization: String,
         @Path("childId") childId: String
     ): Response<ParentQuestionListResponse>
+
+    @GET("api/mobile/v1/children/{childId}/learning-analytics")
+    suspend fun getParentLearningProgress(
+        @Header("Authorization") authorization: String,
+        @Path("childId") childId: String
+    ): Response<LearningProgressResponse>
 
     @PATCH("api/mobile/v1/children/{childId}/questions/{questionId}/review")
     suspend fun reviewParentQuestion(
@@ -386,9 +412,11 @@ object EdukCloudRepository {
     suspend fun getStudentState(studentToken: String) = body(service.getStudentState(bearer(studentToken)))
     suspend fun getStudentPolicy(studentToken: String) = body(service.getStudentPolicy(bearer(studentToken)))
     suspend fun getStudentChallenge(studentToken: String) = body(service.getStudentChallenge(bearer(studentToken)))
+    suspend fun getStudentLearningProgress(studentToken: String) = body(service.getStudentLearningProgress(bearer(studentToken)))
     suspend fun submitChallengeAttempt(studentToken: String, request: ChallengeAttemptRequest) =
         body(service.submitChallengeAttempt(bearer(studentToken), request))
     suspend fun getParentQuestions(parentToken: String, childId: String) = body(service.getParentQuestions(bearer(parentToken), childId))
+    suspend fun getParentLearningProgress(parentToken: String, childId: String) = body(service.getParentLearningProgress(bearer(parentToken), childId))
     suspend fun reviewParentQuestion(parentToken: String, childId: String, questionId: String, reviewStatus: String) =
         body(service.reviewParentQuestion(bearer(parentToken), childId, questionId, ReviewQuestionRequest(reviewStatus)))
     suspend fun getParentPolicy(parentToken: String, childId: String) = body(service.getParentPolicy(bearer(parentToken), childId))

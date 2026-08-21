@@ -3,6 +3,8 @@ package com.eduk.app.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.EdukSessionStore
+import com.eduk.app.cloud.LearningProgressResponse
 import com.eduk.app.cloud.StudentStateResponse
 import com.eduk.app.service.AppMonitoringService
 import com.eduk.app.ui.theme.EdukTheme
@@ -107,6 +110,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
     val sessionStore = remember { EdukSessionStore(context) }
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<StudentStateResponse?>(null) }
+    var learningProgress by remember { mutableStateOf<LearningProgressResponse?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun refresh() {
@@ -119,9 +123,11 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
             runCatching {
                 val status = EdukCloudRepository.getStudentState(token)
                 val policy = EdukCloudRepository.getStudentPolicy(token)
-                status to policy
-            }.onSuccess { (response, policy) ->
+                val progress = EdukCloudRepository.getStudentLearningProgress(token)
+                Triple(status, policy, progress)
+            }.onSuccess { (response, policy, progress) ->
                     state = response
+                    learningProgress = progress
                     AppMonitoringService.applyRemotePolicy(context, policy)
                 }
                 .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
@@ -132,7 +138,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
 
     Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(28.dp))
@@ -165,11 +171,15 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(20.dp))
+                learningProgress?.let { progress ->
+                    StudentProgressCard(progress)
+                    Spacer(Modifier.height(20.dp))
+                }
                 Surface(color = Color.White, shape = RoundedCornerShape(24.dp), shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(20.dp)) {
                         Text("Earn more time", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                         Spacer(Modifier.height(6.dp))
-                        Text("Scan the book you are studying. Eduk will create questions, and each correct answer earns 10 minutes.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
+                        Text("Scan the book you are studying. After a parent approves the questions, verified answers earn the time your parent configured.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(18.dp))
                         Button(onClick = onOpenScanner, modifier = Modifier.fillMaxWidth().height(58.dp), colors = ButtonDefaults.buttonColors(containerColor = HomeOrange), shape = RoundedCornerShape(17.dp)) {
                             Icon(Icons.Default.CameraAlt, null)
@@ -179,7 +189,7 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     }
                 }
             } ?: run {
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(88.dp))
                 if (errorMessage == null) CircularProgressIndicator(color = HomeOrange)
                 else {
                     Icon(Icons.Default.Lock, null, tint = HomeOrange, modifier = Modifier.size(42.dp))
@@ -188,8 +198,42 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     Spacer(Modifier.height(14.dp))
                     OutlinedButton(onClick = ::refresh) { Text("Try again") }
                 }
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(88.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun StudentProgressCard(progress: LearningProgressResponse) {
+    Surface(color = Color.White, shape = RoundedCornerShape(24.dp), shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp)) {
+            Text("Your learning progress", color = HomeNavy, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                HomeProgressMetric("XP", progress.xp.toString(), Modifier.weight(1f))
+                HomeProgressMetric("Streak", "${progress.currentStreak} day${if (progress.currentStreak == 1) "" else "s"}", Modifier.weight(1f))
+                HomeProgressMetric("Accuracy", if (progress.totalAttempts == 0) "—" else "${progress.accuracyPercent}%", Modifier.weight(1f))
+            }
+            if (progress.bySubject.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                val leadingSubject = progress.bySubject.first()
+                Text("Most practiced subject", color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall)
+                Text("${leadingSubject.subject} · ${leadingSubject.accuracyPercent}% accuracy", color = HomeNavy, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            } else {
+                Spacer(Modifier.height(14.dp))
+                Text("Complete an approved challenge to start your streak and subject progress.", color = Color(0xFF62738A), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeProgressMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(color = Color(0xFFF4F6FA), shape = RoundedCornerShape(15.dp), modifier = modifier) {
+        Column(Modifier.padding(horizontal = 11.dp, vertical = 10.dp)) {
+            Text(label, color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall)
+            Text(value, color = HomeNavy, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold)
         }
     }
 }
