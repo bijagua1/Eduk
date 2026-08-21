@@ -1,6 +1,7 @@
 package com.eduk.app.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 
 private val EdukNavy = Color(0xFF0B1F3A)
 private val EdukOrange = Color(0xFFFF7A1A)
+private val EdukInputBody = Color(0xFF52667D)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
     val context = LocalContext.current
     val sessionStore = remember { EdukSessionStore(context) }
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var displayName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -43,6 +46,20 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var pairingCode by remember { mutableStateOf<PairingCodeResponse?>(null) }
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = EdukNavy,
+        unfocusedTextColor = EdukNavy,
+        disabledTextColor = EdukNavy,
+        cursorColor = EdukOrange,
+        focusedBorderColor = EdukOrange,
+        unfocusedBorderColor = Color(0xFF8190A0),
+        focusedLabelColor = EdukOrange,
+        unfocusedLabelColor = EdukInputBody,
+        focusedLeadingIconColor = EdukOrange,
+        unfocusedLeadingIconColor = EdukInputBody,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
 
     fun createChild() {
         val parentToken = sessionStore.parentToken()
@@ -87,9 +104,10 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState)
+                .imePadding()
+                .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
-            Spacer(Modifier.height(12.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
@@ -113,16 +131,20 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Child's name") },
                 leadingIcon = { Icon(Icons.Default.PersonAdd, null) },
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = EdukNavy),
+                colors = inputColors,
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it.lowercase().filter { character -> character.isLetterOrDigit() || character in "._-" } },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Student username") },
-                supportingText = { Text("Used to sign in on the child’s phone.") },
+                supportingText = { Text("Used to sign in on the child’s phone.", color = EdukInputBody) },
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = EdukNavy),
+                colors = inputColors,
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true
             )
@@ -139,6 +161,8 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                     leadingIcon = { Icon(Icons.Default.Key, null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     visualTransformation = PasswordVisualTransformation(),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = EdukNavy),
+                    colors = inputColors,
                     shape = RoundedCornerShape(18.dp),
                     singleLine = true
                 )
@@ -148,11 +172,13 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                     modifier = Modifier.weight(0.72f),
                     label = { Text("Grade") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = EdukNavy),
+                    colors = inputColors,
                     shape = RoundedCornerShape(18.dp),
                     singleLine = true
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = timeLimit,
                 onValueChange = { timeLimit = it.filter(Char::isDigit) },
@@ -160,6 +186,8 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 label = { Text("Daily screen-time limit (minutes)") },
                 leadingIcon = { Icon(Icons.Default.School, null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = EdukNavy),
+                colors = inputColors,
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true
             )
@@ -168,16 +196,16 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(30.dp))
             Button(
                 onClick = ::createChild,
                 enabled = !isSaving && displayName.isNotBlank() && username.length >= 3 && pin.length >= 4 && gradeLevel.toIntOrNull() in 1..12 && timeLimit.toIntOrNull() in 0..1440,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = EdukOrange)
+                colors = ButtonDefaults.buttonColors(containerColor = EdukOrange, contentColor = Color.White)
             ) {
                 if (isSaving) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text("Create account & pairing code", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                else Text("Create account & pairing code", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -196,7 +224,7 @@ fun AddChildScreen(onChildCreated: () -> Unit) {
                     Spacer(Modifier.height(20.dp))
                     Text(pairing.code, fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = EdukOrange, letterSpacing = 6.sp)
                     Spacer(Modifier.height(12.dp))
-                    Text("This code expires in 10 minutes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                    Text("This code expires in 10 minutes.", style = MaterialTheme.typography.bodySmall, color = EdukInputBody)
                 }
             },
             confirmButton = {
