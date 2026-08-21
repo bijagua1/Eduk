@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,7 +20,6 @@ import androidx.compose.ui.unit.sp
 import com.eduk.app.data.EdukDatabase
 import com.eduk.app.model.StudentProfile
 import com.eduk.app.service.AppMonitoringService
-import kotlinx.coroutines.flow.collectAsState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,7 +27,8 @@ import kotlinx.coroutines.launch
 fun ParentDashboardScreen(onAddChild: () -> Unit) {
     val context = LocalContext.current
     val db = remember { EdukDatabase.getDatabase(context) }
-    val profiles by db.profileDao().getAllProfiles().collectAsState(initial = emptyList())
+    val profilesState = db.profileDao().getAllProfiles().collectAsState(initial = emptyList())
+    val profiles = profilesState.value
     
     var timeEarned by remember { mutableIntStateOf(120) }
     var showTimeDialog by remember { mutableStateOf(false) }
