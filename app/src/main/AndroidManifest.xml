@@ -13,9 +13,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher_background"
+        android:icon="@drawable/ic_eduk_shield"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_launcher_background"
+        android:roundIcon="@drawable/ic_eduk_shield"
         android:supportsRtl="true"
         android:theme="@style/Theme.Eduk"
         tools:replace="android:allowBackup,android:label,android:icon,android:roundIcon"
