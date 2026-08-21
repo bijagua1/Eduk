@@ -300,7 +300,6 @@ fun ParentDashboardScreen(onAddChild: () -> Unit) {
                 }
             }
         }
-        }
     }
 
     controlsChild?.let { child ->
