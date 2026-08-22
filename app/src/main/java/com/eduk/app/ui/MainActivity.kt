@@ -288,32 +288,36 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(28.dp))
-            Text("Eduk", color = HomeNavy, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
-            Text("Student Mode", color = HomeOrange, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(22.dp))
             state?.let { current ->
-                Surface(color = HomeNavy, shape = RoundedCornerShape(30.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(26.dp)) {
-                        Text("Hi, ${current.child.displayName}", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
-                        Spacer(Modifier.height(20.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = Color.White.copy(alpha = 0.12f), shape = RoundedCornerShape(18.dp), modifier = Modifier.size(58.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Timer, null, tint = HomeOrange, modifier = Modifier.size(30.dp)) }
-                            }
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Screen time ready", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelLarge)
-                                Text("${current.child.timeAvailableMinutes} min", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
-                            }
+                EdukGlowHero(
+                    overline = "Eduk student mode",
+                    title = "Hi, ${current.child.displayName}.",
+                    description = "Learn, earn your time, and keep your progress moving forward.",
+                    icon = Icons.Default.School
+                )
+                Spacer(Modifier.height(14.dp))
+                Surface(color = HomeOrange, shape = RoundedCornerShape(24.dp), shadowElevation = 7.dp, modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(color = Color.White.copy(alpha = 0.20f), shape = RoundedCornerShape(17.dp), modifier = Modifier.size(54.dp)) {
+                            Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Timer, null, tint = Color.White, modifier = Modifier.size(29.dp)) }
                         }
-                        Spacer(Modifier.height(20.dp))
-                        Surface(color = if (current.child.isBlockingEnabled) Color(0xFF143B51) else Color(0xFF5A3840), shape = RoundedCornerShape(14.dp)) {
-                            Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(if (current.child.isBlockingEnabled) Icons.Default.Security else Icons.Default.Lock, null, tint = HomeOrange, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(9.dp))
-                                Text(if (current.child.isBlockingEnabled) "Protected apps are active" else "App protection is paused", color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                            }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("TIME READY", color = Color.White.copy(alpha = 0.78f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("${current.child.timeAvailableMinutes} min", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        Text("EARN\nMORE", color = Color.White.copy(alpha = 0.90f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Surface(color = if (current.child.isBlockingEnabled) HomeNavy else Color(0xFF5A3840), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(if (current.child.isBlockingEnabled) Icons.Default.Security else Icons.Default.Lock, null, tint = HomeOrange, modifier = Modifier.size(19.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(if (current.child.isBlockingEnabled) "Protection is active" else "Protection is paused", color = Color.White, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.bodyMedium)
+                            Text(if (current.child.isBlockingEnabled) "Your parent’s app rules are ready on this phone." else "Ask your parent before changing this setting.", color = Color.White.copy(alpha = 0.74f), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
