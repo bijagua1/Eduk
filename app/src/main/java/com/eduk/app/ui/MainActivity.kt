@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         val hasPendingGate = intent.getBooleanExtra("TRIGGER_QUESTION", false)
         if (hasPendingGate && !ChildPolicyStore(this).isAccessCurrentlyEarned()) {
-            GateOverlayService.show(this)
+            GateOverlayService.show(this, restrictedAppPackage)
         }
     }
 

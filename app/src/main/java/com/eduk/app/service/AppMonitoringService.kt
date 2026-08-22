@@ -121,7 +121,7 @@ class AppMonitoringService : AccessibilityService() {
         if (now - lastGateLaunchAt < 400L) return
         lastGateLaunchAt = now
         Log.d("EdukMonitor", "Learning gate active for $packageName")
-        GateOverlayService.show(this)
+        GateOverlayService.show(this, packageName)
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)

@@ -28,18 +28,24 @@ import com.eduk.app.ui.MainActivity
 class GateOverlayService : Service() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
+    private var restrictedAppPackage: String? = null
 
     companion object {
         private const val ACTION_SHOW = "com.eduk.app.action.SHOW_GATE"
         private const val ACTION_HIDE = "com.eduk.app.action.HIDE_GATE"
+        private const val EXTRA_RESTRICTED_APP = "RESTRICTED_APP"
 
         fun canDrawOverlays(context: Context): Boolean =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
 
-        fun show(context: Context) {
+        fun show(context: Context, restrictedAppPackage: String? = null) {
             if (!canDrawOverlays(context)) return
             runCatching {
-                context.startService(Intent(context, GateOverlayService::class.java).setAction(ACTION_SHOW))
+                context.startService(
+                    Intent(context, GateOverlayService::class.java)
+                        .setAction(ACTION_SHOW)
+                        .putExtra(EXTRA_RESTRICTED_APP, restrictedAppPackage)
+                )
             }
         }
 
@@ -53,7 +59,12 @@ class GateOverlayService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_HIDE) removeOverlay() else addOverlay()
+        if (intent?.action == ACTION_HIDE) {
+            removeOverlay()
+        } else {
+            restrictedAppPackage = intent?.getStringExtra(EXTRA_RESTRICTED_APP) ?: restrictedAppPackage
+            addOverlay()
+        }
         return START_NOT_STICKY
     }
 
@@ -121,6 +132,7 @@ class GateOverlayService : Service() {
             setOnClickListener {
                 startActivity(Intent(this@GateOverlayService, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    putExtra("RESTRICTED_APP", restrictedAppPackage)
                     putExtra("TRIGGER_QUESTION", true)
                 })
             }
