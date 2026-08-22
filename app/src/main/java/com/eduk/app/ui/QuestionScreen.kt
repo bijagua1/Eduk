@@ -1,5 +1,7 @@
 package com.eduk.app.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -51,7 +54,7 @@ private val ChallengeInk = Color(0xFF182C45)
 private val ChallengeMuted = Color(0xFF62738A)
 
 @Composable
-fun QuestionScreen(onCorrect: () -> Unit) {
+fun QuestionScreen(restrictedAppPackage: String? = null, onCorrect: () -> Unit) {
     val context = LocalContext.current
     val sessionStore = remember { EdukSessionStore(context) }
     val scope = rememberCoroutineScope()
@@ -63,6 +66,7 @@ fun QuestionScreen(onCorrect: () -> Unit) {
     var submitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var questionStartedAt by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    BackHandler(enabled = true) { /* A pending parent-authorized gate cannot be dismissed with Back. */ }
 
     fun loadChallenge() {
         val token = sessionStore.studentToken()
@@ -96,7 +100,10 @@ fun QuestionScreen(onCorrect: () -> Unit) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.linearGradient(listOf(Color(0xFFE7F0FF), Color(0xFFF8F2FF), Color(0xFFFFF0E2))))
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -133,7 +140,13 @@ fun QuestionScreen(onCorrect: () -> Unit) {
                         runCatching {
                             EdukCloudRepository.submitChallengeAttempt(
                                 token,
-                                ChallengeAttemptRequest(challenge!!.id, currentQuestion.id, selected, elapsedSeconds)
+                                ChallengeAttemptRequest(
+                                    challengeId = challenge!!.id,
+                                    questionId = currentQuestion.id,
+                                    answer = selected,
+                                    responseTimeSeconds = elapsedSeconds,
+                                    accessPackageName = restrictedAppPackage
+                                )
                             )
                         }.onSuccess { response ->
                             result = response

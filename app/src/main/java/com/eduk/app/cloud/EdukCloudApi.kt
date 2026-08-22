@@ -190,7 +190,8 @@ data class ChallengeAttemptRequest(
     val challengeId: String,
     val questionId: String,
     val answer: String,
-    val responseTimeSeconds: Int? = null
+    val responseTimeSeconds: Int? = null,
+    val accessPackageName: String? = null
 )
 data class ChallengeAttemptResponse(
     val wasCorrect: Boolean,

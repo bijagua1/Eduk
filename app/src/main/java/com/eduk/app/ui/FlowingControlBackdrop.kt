@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -43,6 +44,30 @@ fun FlowingControlBackdrop(pulse: Int, modifier: Modifier = Modifier) {
         label = "eduk-flow-pulse"
     )
     Canvas(modifier = modifier.fillMaxSize()) {
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFFE7F0FF),
+                    Color(0xFFF8F2FF),
+                    Color(0xFFFFF0E2)
+                )
+            )
+        )
+        drawCircle(
+            color = Color(0xFF2E6CB8).copy(alpha = 0.11f + accent * 0.08f),
+            radius = size.width * (0.36f + accent * 0.07f),
+            center = androidx.compose.ui.geometry.Offset(size.width * (0.94f - drift * 0.18f), size.height * 0.12f)
+        )
+        drawCircle(
+            color = Color(0xFFFF7A1A).copy(alpha = 0.10f + accent * 0.09f),
+            radius = size.width * (0.29f + accent * 0.06f),
+            center = androidx.compose.ui.geometry.Offset(size.width * (0.10f + drift * 0.12f), size.height * 0.86f)
+        )
+        drawCircle(
+            color = Color(0xFF7450C8).copy(alpha = 0.07f + accent * 0.06f),
+            radius = size.width * 0.22f,
+            center = androidx.compose.ui.geometry.Offset(size.width * 0.70f, size.height * (0.54f + drift * 0.08f))
+        )
         val pulseShift = (animatedPulse % 7f) * 30f
         fun flowPath(baseY: Float, amplitude: Float, shift: Float): Path = Path().apply {
             moveTo(-size.width * 0.15f, baseY)

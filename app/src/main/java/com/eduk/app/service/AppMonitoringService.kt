@@ -63,7 +63,9 @@ class AppMonitoringService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || !::policyStore.isInitialized) return
+        val isForegroundChange = event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+            event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED
+        if (!isForegroundChange || !::policyStore.isInitialized) return
         val packageName = event.packageName?.toString() ?: return
         if (policyStore.currentForegroundPackage() != packageName) {
             policyStore.beginForeground(packageName)

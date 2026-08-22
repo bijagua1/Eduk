@@ -66,16 +66,21 @@ private val HomeOrange = Color(0xFFFF7A1A)
 
 class MainActivity : ComponentActivity() {
     private var questionRequestNonce = 0
+    private var restrictedAppPackage: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (intent.getBooleanExtra("TRIGGER_QUESTION", false)) questionRequestNonce += 1
+        if (intent.getBooleanExtra("TRIGGER_QUESTION", false)) {
+            questionRequestNonce += 1
+            restrictedAppPackage = intent.getStringExtra("RESTRICTED_APP")
+        }
         setContent {
             EdukTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     EdukApp(
                         startDestination = if (questionRequestNonce > 0) "question" else "localization",
-                        questionRequestNonce = questionRequestNonce
+                        questionRequestNonce = questionRequestNonce,
+                        restrictedAppPackage = restrictedAppPackage
                     )
                 }
             }
@@ -87,10 +92,15 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         if (intent.getBooleanExtra("TRIGGER_QUESTION", false)) {
             questionRequestNonce += 1
+            restrictedAppPackage = intent.getStringExtra("RESTRICTED_APP")
             setContent {
                 EdukTheme {
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        EdukApp(startDestination = "localization", questionRequestNonce = questionRequestNonce)
+                        EdukApp(
+                            startDestination = "localization",
+                            questionRequestNonce = questionRequestNonce,
+                            restrictedAppPackage = restrictedAppPackage
+                        )
                     }
                 }
             }
@@ -99,7 +109,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EdukApp(startDestination: String, questionRequestNonce: Int = 0) {
+fun EdukApp(startDestination: String, questionRequestNonce: Int = 0, restrictedAppPackage: String? = null) {
     val navController = rememberNavController()
     val motionEnabled = rememberEdukMotionEnabled()
     var selectedCountry by remember { mutableStateOf("United States") }
@@ -164,7 +174,7 @@ fun EdukApp(startDestination: String, questionRequestNonce: Int = 0) {
             ChildHomeScreen(onOpenScanner = { navController.navigate("scanner") })
         }
         composable("question") {
-            QuestionScreen(onCorrect = {
+            QuestionScreen(restrictedAppPackage = restrictedAppPackage, onCorrect = {
                 navController.navigate("child_home") { popUpTo("question") { inclusive = true } }
             })
         }

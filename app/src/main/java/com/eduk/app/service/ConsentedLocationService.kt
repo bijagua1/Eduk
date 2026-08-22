@@ -9,6 +9,8 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.IBinder
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -33,24 +35,27 @@ class ConsentedLocationService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val sessionStore by lazy { EdukSessionStore(this) }
     private val locationClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
+    private val pendingReports by lazy { PendingLocationReportStore(this) }
+    private val connectivityManager by lazy { getSystemService(ConnectivityManager::class.java) }
+    private var connectivityRegistered = false
+    private val connectivityCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            scope.launch { deliverPendingReport() }
+        }
+    }
     private val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val location = result.lastLocation ?: return
             val token = sessionStore.studentToken() ?: return stopSharing()
             scope.launch {
-                runCatching {
-                    EdukCloudRepository.reportStudentLocation(
-                        token,
-                        StudentLocationReportRequest(
-                            latitude = location.latitude,
-                            longitude = location.longitude,
-                            accuracyMeters = location.accuracy.coerceAtLeast(0f).toInt(),
-                            batteryPercent = null
-                        )
+                deliverReport(
+                    StudentLocationReportRequest(
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        accuracyMeters = location.accuracy.coerceAtLeast(0f).toInt(),
+                        batteryPercent = null
                     )
-                }.onFailure {
-                    // Transient network failures are retried by the next scheduled update.
-                }
+                )
             }
         }
     }
@@ -61,7 +66,8 @@ class ConsentedLocationService : Service() {
             return START_NOT_STICKY
         }
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, notification())
+        startForeground(NOTIFICATION_ID, notification("Ready to share a consented location."))
+        registerConnectivityCallback()
         val request = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, UPDATE_INTERVAL_MS)
             .setMinUpdateIntervalMillis(MIN_UPDATE_INTERVAL_MS)
             .setMaxUpdateDelayMillis(UPDATE_INTERVAL_MS * 2)
@@ -72,6 +78,7 @@ class ConsentedLocationService : Service() {
 
     override fun onDestroy() {
         locationClient.removeLocationUpdates(callback)
+        if (connectivityRegistered) runCatching { connectivityManager.unregisterNetworkCallback(connectivityCallback) }
         super.onDestroy()
     }
 
@@ -89,6 +96,7 @@ class ConsentedLocationService : Service() {
     }
 
     private fun stopSharing() {
+        pendingReports.clear()
         sessionStore.setLocationSharingActive(false)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -103,10 +111,40 @@ class ConsentedLocationService : Service() {
         )
     }
 
-    private fun notification(): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun deliverPendingReport() {
+        pendingReports.read()?.let(::deliverReport)
+    }
+
+    private suspend fun deliverReport(report: StudentLocationReportRequest) {
+        val token = sessionStore.studentToken() ?: return stopSharing()
+        runCatching { EdukCloudRepository.reportStudentLocation(token, report) }
+            .onSuccess {
+                pendingReports.clear()
+                updateNotification("Location shared with your family just now.")
+            }
+            .onFailure {
+                pendingReports.save(report)
+                updateNotification("Waiting to securely send your location when internet returns.")
+            }
+    }
+
+    private fun registerConnectivityCallback() {
+        if (connectivityRegistered) return
+        runCatching {
+            connectivityManager.registerDefaultNetworkCallback(connectivityCallback)
+            connectivityRegistered = true
+        }
+        scope.launch { deliverPendingReport() }
+    }
+
+    private fun updateNotification(message: String) {
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(message))
+    }
+
+    private fun notification(message: String): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(com.eduk.app.R.mipmap.ic_eduk_launcher)
         .setContentTitle("Eduk location sharing is on")
-        .setContentText("Your location is being securely shared with your family.")
+        .setContentText(message)
         .setOngoing(true)
         .setCategory(NotificationCompat.CATEGORY_SERVICE)
         .build()
