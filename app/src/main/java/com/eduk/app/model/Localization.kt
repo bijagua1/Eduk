@@ -1,5 +1,7 @@
 package com.eduk.app.model
 
+import java.util.Locale
+
 data class Country(
     val name: String,
     val code: String,
@@ -12,27 +14,36 @@ data class Language(
 )
 
 object LocalizationData {
-    val countries = listOf(
-        Country("United States", "US", "🇺🇸"),
-        Country("United Kingdom", "GB", "🇬🇧"),
-        Country("Spain", "ES", "🇪🇸"),
-        Country("Mexico", "MX", "🇲🇽"),
-        Country("Colombia", "CO", "🇨🇴"),
-        Country("Argentina", "AR", "🇦🇷"),
-        Country("Brazil", "BR", "🇧🇷"),
-        Country("France", "FR", "🇫🇷"),
-        Country("Germany", "DE", "🇩🇪"),
-        Country("Italy", "IT", "🇮🇹"),
-        Country("Canada", "CA", "🇨🇦"),
-        Country("Australia", "AU", "🇦🇺")
-    )
+    val countries: List<Country> = Locale.getISOCountries()
+        .mapNotNull { code ->
+            val countryName = Locale("", code).getDisplayCountry(Locale.ENGLISH)
+            if (countryName.isBlank()) {
+                null
+            } else {
+                Country(countryName, code, flagFor(code))
+            }
+        }
+        .sortedBy { it.name }
 
-    val languages = listOf(
-        Language("English", "en"),
-        Language("Español", "es"),
-        Language("Français", "fr"),
-        Language("Deutsch", "de"),
-        Language("Português", "pt"),
-        Language("Italiano", "it")
-    )
+    val languages: List<Language> = Locale.getISOLanguages()
+        .mapNotNull { code ->
+            val englishName = Locale(code).getDisplayLanguage(Locale.ENGLISH)
+            if (englishName.isBlank()) {
+                null
+            } else {
+                val nativeName = Locale(code).getDisplayLanguage(Locale(code))
+                val name = if (nativeName.isBlank() || nativeName == englishName) {
+                    englishName
+                } else {
+                    "$nativeName ($englishName)"
+                }
+                Language(name, code)
+            }
+        }
+        .sortedBy { it.name }
+
+    private fun flagFor(countryCode: String): String = countryCode
+        .uppercase(Locale.ROOT)
+        .map { character -> String(Character.toChars(character.code + 0x1F1A5)) }
+        .joinToString("")
 }
