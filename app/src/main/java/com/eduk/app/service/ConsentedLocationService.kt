@@ -111,7 +111,7 @@ class ConsentedLocationService : Service() {
         )
     }
 
-    private fun deliverPendingReport() {
+    private suspend fun deliverPendingReport() {
         pendingReports.read()?.let(::deliverReport)
     }
 
