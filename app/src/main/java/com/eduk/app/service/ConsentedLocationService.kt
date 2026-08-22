@@ -112,7 +112,8 @@ class ConsentedLocationService : Service() {
     }
 
     private suspend fun deliverPendingReport() {
-        pendingReports.read()?.let(::deliverReport)
+        val pendingReport = pendingReports.read() ?: return
+        deliverReport(pendingReport)
     }
 
     private suspend fun deliverReport(report: StudentLocationReportRequest) {
