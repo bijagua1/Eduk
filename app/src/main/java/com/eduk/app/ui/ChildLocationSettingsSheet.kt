@@ -3,6 +3,7 @@ package com.eduk.app.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -142,12 +143,14 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
     }
 
     LaunchedEffect(child.id) { load() }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.White, shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)) {
-        LazyColumn(
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
-        ) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.Transparent, shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)) {
+            FlowingControlBackdrop(pulse = safePlaces.size + if (isSharingEnabled) 2 else 0)
+            LazyColumn(
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
             item {
                 Text("${child.displayName}'s location privacy", color = LocationNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                 Spacer(Modifier.height(5.dp))
@@ -295,6 +298,7 @@ fun ChildLocationSettingsSheet(child: CloudChild, parentToken: String?, onDismis
             }
         }
     }
+}
 }
 
 private fun displayLocationTime(timestamp: String): String = timestamp
