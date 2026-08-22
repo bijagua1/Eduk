@@ -48,6 +48,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.eduk.app.cloud.EdukCloudException
 import com.eduk.app.cloud.EdukCloudRepository
 import com.eduk.app.cloud.EdukSessionStore
 import com.eduk.app.cloud.InstalledAppInventoryReporter
@@ -76,11 +77,15 @@ class MainActivity : ComponentActivity() {
             questionRequestNonce += 1
             restrictedAppPackage = intent.getStringExtra("RESTRICTED_APP")
         }
+        val hasStoredStudentSession = EdukSessionStore(applicationContext).studentToken() != null
         setContent {
             EdukTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     EdukApp(
-                        startDestination = if (questionRequestNonce > 0) "question" else "localization",
+                        startDestination = studentStartDestination(
+                            hasPendingGate = questionRequestNonce > 0,
+                            hasStoredStudentSession = hasStoredStudentSession
+                        ),
                         questionRequestNonce = questionRequestNonce,
                         restrictedAppPackage = restrictedAppPackage
                     )
@@ -186,7 +191,15 @@ fun EdukApp(startDestination: String, questionRequestNonce: Int = 0, restrictedA
             })
         }
         composable("child_home") {
-            ChildHomeScreen(onOpenScanner = { navController.navigate("scanner") })
+            ChildHomeScreen(
+                onOpenScanner = { navController.navigate("scanner") },
+                onSessionInvalidated = {
+                    navController.navigate("student_access") {
+                        popUpTo("child_home") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
         composable("question") {
             QuestionScreen(restrictedAppPackage = restrictedAppPackage, onCorrect = {
@@ -200,7 +213,7 @@ fun EdukApp(startDestination: String, questionRequestNonce: Int = 0, restrictedA
 }
 
 @Composable
-fun ChildHomeScreen(onOpenScanner: () -> Unit) {
+fun ChildHomeScreen(onOpenScanner: () -> Unit, onSessionInvalidated: () -> Unit) {
     val context = LocalContext.current
     val sessionStore = remember { EdukSessionStore(context) }
     val scope = rememberCoroutineScope()
@@ -301,7 +314,15 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                         }
                     }
                 }
-                .onFailure { errorMessage = "We could not sync your Eduk status. Check your connection and try again." }
+                .onFailure { error ->
+                    if (error is EdukCloudException && error.statusCode in setOf(401, 403)) {
+                        sessionStore.clearStudentSession()
+                        ConsentedLocationService.stop(context)
+                        onSessionInvalidated()
+                    } else {
+                        errorMessage = "We could not sync your Eduk status. Check your connection and try again."
+                    }
+                }
         }
     }
 
