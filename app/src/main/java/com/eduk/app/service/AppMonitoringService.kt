@@ -22,6 +22,7 @@ class AppMonitoringService : AccessibilityService() {
 
     companion object {
         private var instance: AppMonitoringService? = null
+        private const val POLICY_REFRESH_INTERVAL_MILLIS = 15_000L
 
         fun grantAccess(minutes: Int) {
             instance?.performGrant(minutes)
@@ -156,7 +157,4 @@ class AppMonitoringService : AccessibilityService() {
         instance = null
     }
 
-    private companion object {
-        const val POLICY_REFRESH_INTERVAL_MILLIS = 15_000L
-    }
 }
