@@ -1,6 +1,7 @@
 package com.eduk.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -89,14 +90,16 @@ fun ParentQuestionReviewSheet(child: CloudChild, parentToken: String?, onDismiss
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = Color.Transparent,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)) {
+            FlowingControlBackdrop(pulse = questions.size + if (isLoading) 0 else 1)
+            LazyColumn(
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
             item {
                 Text("Review learning questions", color = ReviewNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                 Spacer(Modifier.height(5.dp))
@@ -137,6 +140,7 @@ fun ParentQuestionReviewSheet(child: CloudChild, parentToken: String?, onDismiss
                         }
                     }
                 }
+            }
             }
         }
     }
