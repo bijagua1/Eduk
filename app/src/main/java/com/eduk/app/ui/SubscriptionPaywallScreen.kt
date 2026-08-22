@@ -53,10 +53,12 @@ fun SubscriptionPaywallScreen(onContinue: () -> Unit) {
 
     LaunchedEffect(parentToken) { loadEntitlement() }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        FlowingControlBackdrop(pulse = if (loading) 0 else 2)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color(0xFFFFD700).copy(alpha = 0.13f),
@@ -86,6 +88,7 @@ fun SubscriptionPaywallScreen(onContinue: () -> Unit) {
             else -> FreeEntitlement(onContinue = onContinue)
         }
     }
+}
 }
 
 @Composable
