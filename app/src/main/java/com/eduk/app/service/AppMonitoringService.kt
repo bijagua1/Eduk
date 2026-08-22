@@ -118,12 +118,14 @@ class AppMonitoringService : AccessibilityService() {
     private fun checkAccess(packageName: String) {
         if (policyStore.isAccessCurrentlyEarned()) return
         val now = System.currentTimeMillis()
-        if (now - lastGateLaunchAt < 1_500L) return
+        if (now - lastGateLaunchAt < 400L) return
         lastGateLaunchAt = now
         Log.d("EdukMonitor", "Learning gate active for $packageName")
+        GateOverlayService.show(this)
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             putExtra("RESTRICTED_APP", packageName)
             putExtra("TRIGGER_QUESTION", true)
         }
@@ -134,6 +136,7 @@ class AppMonitoringService : AccessibilityService() {
         if (!::policyStore.isInitialized) return
         policyStore.grantAccess(minutes.coerceAtLeast(0))
         Log.d("EdukMonitor", "Earned access granted for $minutes minutes")
+        GateOverlayService.hide(this)
     }
 
     private fun applyBlockingState(enabled: Boolean) {

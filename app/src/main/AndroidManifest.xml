@@ -58,6 +58,10 @@
         </service>
 
         <service
+            android:name=".service.GateOverlayService"
+            android:exported="false" />
+
+        <service
             android:name=".service.ConsentedLocationService"
             android:exported="false"
             android:foregroundServiceType="location" />

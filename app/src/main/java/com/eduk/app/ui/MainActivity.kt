@@ -55,8 +55,10 @@ import com.eduk.app.cloud.LearningProgressResponse
 import com.eduk.app.cloud.StudentLocationReportRequest
 import com.eduk.app.cloud.StudentStateResponse
 import com.eduk.app.service.AppMonitoringService
+import com.eduk.app.service.ChildPolicyStore
 import com.eduk.app.service.ConsentedLocationService
 import com.eduk.app.service.EdukDeviceAdminReceiver
+import com.eduk.app.service.GateOverlayService
 import com.eduk.app.ui.theme.EdukTheme
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
@@ -84,6 +86,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        GateOverlayService.hide(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val hasPendingGate = intent.getBooleanExtra("TRIGGER_QUESTION", false)
+        if (hasPendingGate && !ChildPolicyStore(this).isAccessCurrentlyEarned()) {
+            GateOverlayService.show(this)
         }
     }
 
@@ -337,18 +352,24 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                     StudentProgressCard(progress)
                     Spacer(Modifier.height(20.dp))
                 }
-                if (!AppMonitoringService.isServiceRunning()) {
+                if (!AppMonitoringService.isServiceRunning() || !GateOverlayService.canDrawOverlays(context)) {
                     Surface(color = Color(0xFFFFF6EE), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(20.dp)) {
                             Text("Finish protection setup", color = HomeNavy, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, modifier = Modifier.semantics { heading() })
                             Spacer(Modifier.height(6.dp))
-                            Text("To apply your parent’s app rules, enable Eduk in Android Accessibility. Eduk only checks which app is open; it does not read messages or page content.", color = Color(0xFF624833), style = MaterialTheme.typography.bodySmall)
-                            Spacer(Modifier.height(12.dp))
-                            OutlinedButton(
-                                onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
-                                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
-                            ) { Text("Open Accessibility settings", fontWeight = FontWeight.Bold) }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            Text(
+                                if (!AppMonitoringService.isServiceRunning()) "To apply your parent’s app rules, enable Eduk in Android Accessibility. Eduk only checks which app is open; it does not read messages or page content."
+                                else "Allow Eduk to display above other apps so a pending learning question cannot be bypassed with Home or Recents.",
+                                color = Color(0xFF624833), style = MaterialTheme.typography.bodySmall
+                            )
+                            if (!AppMonitoringService.isServiceRunning()) {
+                                Spacer(Modifier.height(12.dp))
+                                OutlinedButton(
+                                    onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
+                                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
+                                ) { Text("Open Accessibility settings", fontWeight = FontWeight.Bold) }
+                            }
+                            if (!AppMonitoringService.isServiceRunning() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 Spacer(Modifier.height(10.dp))
                                 Text(
                                     "If Eduk is greyed out or says “Restricted settings”, open Eduk app info, tap the three-dot menu, choose “Allow restricted settings”, then return here.",
@@ -367,6 +388,18 @@ fun ChildHomeScreen(onOpenScanner: () -> Unit) {
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(14.dp)
                                 ) { Text("Open Eduk app info", fontWeight = FontWeight.Bold) }
+                            }
+                            if (!GateOverlayService.canDrawOverlays(context)) {
+                                Spacer(Modifier.height(10.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)
+                                ) { Text("Allow display over other apps", fontWeight = FontWeight.Bold) }
                             }
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(
