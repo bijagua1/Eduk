@@ -9,6 +9,10 @@ import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,10 +28,13 @@ private val RoleOrange = Color(0xFFFF7A1A)
 
 @Composable
 fun RoleSelectionScreen(onRoleSelected: (String) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().background(Color(0xFFF6F7FB)).padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    var motionPulse by remember { mutableIntStateOf(0) }
+    Box(modifier = Modifier.fillMaxSize()) {
+        FlowingControlBackdrop(pulse = motionPulse)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         Spacer(Modifier.height(34.dp))
         Surface(color = RoleNavy, shape = RoundedCornerShape(30.dp), modifier = Modifier.size(112.dp)) {
             Image(painter = painterResource(id = R.drawable.ic_eduk_shield), contentDescription = "Eduk shield", modifier = Modifier.padding(12.dp))
@@ -44,7 +51,7 @@ fun RoleSelectionScreen(onRoleSelected: (String) -> Unit) {
             icon = Icons.Default.SupervisorAccount,
             accentColor = RoleOrange,
             isPrimary = true,
-            onClick = { onRoleSelected("parent") }
+            onClick = { motionPulse += 1; onRoleSelected("parent") }
         )
         Spacer(Modifier.height(16.dp))
         RoleCard(
@@ -53,11 +60,12 @@ fun RoleSelectionScreen(onRoleSelected: (String) -> Unit) {
             icon = Icons.Default.ChildCare,
             accentColor = RoleNavy,
             isPrimary = false,
-            onClick = { onRoleSelected("child") }
+            onClick = { motionPulse += 1; onRoleSelected("child") }
         )
         Spacer(Modifier.weight(1f))
         Text("Eduk Family Cloud keeps your family controls synchronized across paired devices.", color = Color(0xFF62738A), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(18.dp))
+        }
     }
 }
 
