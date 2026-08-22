@@ -1,6 +1,7 @@
 package com.eduk.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -69,14 +70,16 @@ fun ParentLearningProgressSheet(child: CloudChild, parentToken: String?, onDismi
     LaunchedEffect(child.id) { loadProgress() }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = Color.Transparent,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp)) {
+            FlowingControlBackdrop(pulse = (progress?.totalAttempts ?: 0) + if (loading) 0 else 1)
+            LazyColumn(
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 42.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
             item {
                 Text("${child.displayName}'s learning", color = AnalyticsNavy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                 Spacer(Modifier.height(5.dp))
@@ -110,6 +113,7 @@ fun ParentLearningProgressSheet(child: CloudChild, parentToken: String?, onDismi
                     }
                     items(data.byTopic.take(3), key = { "${it.subject}:${it.topic}" }) { topic -> TopicAnalyticsRow(topic) }
                 }
+            }
             }
         }
     }
