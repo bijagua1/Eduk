@@ -113,11 +113,13 @@ fun BookScannerScreen(onScanComplete: () -> Unit) {
         })
     }
 
-    Scaffold(containerColor = Color(0xFFF6F7FB)) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+    Scaffold(containerColor = Color.Transparent) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            FlowingControlBackdrop(pulse = generatedCount + if (isCapturing) 1 else 0)
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             Text("Scan your study page", style = MaterialTheme.typography.headlineSmall, color = Color(0xFF0B1F3A), modifier = Modifier.semantics { heading() })
             Text("Eduk uses the page you capture to create your next learning challenge.", color = Color(0xFF52667D), style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(20.dp))
@@ -155,6 +157,7 @@ fun BookScannerScreen(onScanComplete: () -> Unit) {
                     if (isCapturing) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                     else { Icon(Icons.Default.CameraAlt, null); Spacer(Modifier.width(8.dp)); Text("Capture page & create questions") }
                 }
+            }
             }
         }
     }
