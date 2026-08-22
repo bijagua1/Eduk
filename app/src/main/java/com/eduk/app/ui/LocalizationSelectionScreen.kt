@@ -1,6 +1,5 @@
 package com.eduk.app.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,13 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.eduk.app.R
 import com.eduk.app.model.LocalizationData
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,20 +29,14 @@ fun LocalizationSelectionScreen(onComplete: (countryCode: String, languageCode: 
     var selectedLanguage by remember { mutableStateOf(LocalizationData.languages[0]) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Hero Image with Gradient Overlay
-        Image(
-            painter = painterResource(id = R.drawable.parent_child_hero),
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(300.dp),
-            contentScale = ContentScale.Crop
-        )
+        FlowingControlBackdrop(pulse = step)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, MaterialTheme.colorScheme.background)
+                        colors = listOf(Color(0xFF0B1F3A).copy(alpha = 0.78f), Color(0xFF2E6CB8).copy(alpha = 0.38f), Color.Transparent)
                     )
                 )
         )
@@ -56,7 +46,7 @@ fun LocalizationSelectionScreen(onComplete: (countryCode: String, languageCode: 
                 .fillMaxSize()
                 .padding(top = 220.dp)
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                .background(MaterialTheme.colorScheme.background)
+                .background(Color(0xFFF7FAFF).copy(alpha = 0.94f))
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -64,12 +54,12 @@ fun LocalizationSelectionScreen(onComplete: (countryCode: String, languageCode: 
                 text = if (step == 1) "Choose your Region" else "Choose your Language",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = Color(0xFF0B1F3A)
             )
             Text(
                 text = "Eduk is tailored to your local curriculum.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
+                color = Color(0xFF52677F),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
